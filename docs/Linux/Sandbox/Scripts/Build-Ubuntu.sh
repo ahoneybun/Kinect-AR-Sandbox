@@ -24,7 +24,7 @@ if [ $CD_RESULT -ne 0 ]; then
 fi
 
 # Determine current Vrui version:
-VRUI_CURRENT_RELEASE=$(wget -q -O - https://findemor.github.io/Kinect-Augmented-Reality-Sandbox/docs/Linux/Sandbox/Scripts/CurrentVruiRelease.txt)
+VRUI_CURRENT_RELEASE=$(wget -q -O - https://findemor.github.io/Kinect-Augmented-Reality-Sandbox/Linux/Sandbox/Scripts/CurrentVruiRelease.txt)
 GETVERSION_RESULT=$?
 if [ $GETVERSION_RESULT -ne 0 ]; then
 	echo "Could not determine current Vrui release number; please check your network connection and try again"
