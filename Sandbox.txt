@@ -1,0 +1,20 @@
+Paso 4:
+
+Instalar Vrui
+```shell
+wget https://findemor.github.io/Kinect-Augmented-Reality-Sandbox/Linux/Sandbox/Scripts/Build-Ubuntu.sh
+bash Build-Ubuntu.sh
+```
+
+Instalar Kinect Packages
+```shell
+cd ~/src
+wget https://findemor.github.io/Kinect-Augmented-Reality-Sandbox/Linux/Sandbox/Resources/Kinect-2.8-001.tar.gz
+tar xfz Kinect-2.8-001.tar.gz
+cd Kinect-2.8-001
+make
+make install
+make installudevrule
+```
+
+
