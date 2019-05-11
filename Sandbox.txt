@@ -13,8 +13,20 @@ wget https://findemor.github.io/Kinect-Augmented-Reality-Sandbox/Linux/Sandbox/R
 tar xfz Kinect-2.8-001.tar.gz
 cd Kinect-2.8-001
 make
-make install
+
+sudo mkdir /usr/local/include/Kinect
+
+
+
+
+sudo make install
 make installudevrule
 ```
 
+https://www.youtube.com/watch?time_continue=1262&v=R0UyMeJ2pYc 27.40
 
+```shell
+cd ~/src
+wget https://findemor.github.io/Kinect-Augmented-Reality-Sandbox/Linux/Sandbox/Resources/SARndbox-1.5-001.tar.gz
+
+```
