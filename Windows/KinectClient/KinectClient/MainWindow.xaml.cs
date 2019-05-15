@@ -17,10 +17,24 @@ using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-
+using System.IO;
+using System.Drawing.Imaging;
+using Newtonsoft.Json;
 
 namespace KinectClient
 {
+
+
+    class TCPMetadata
+    {
+
+    }
+
+    class TCPUpdateData
+    {
+        public byte[] DepthImage;
+    }
+
     /// <summary>
     /// Lógica de interacción para MainWindow.xaml
     /// </summary>
@@ -53,12 +67,47 @@ namespace KinectClient
             nwStream.Write(bytesToSend, 0, bytesToSend.Length);
 
             //---read back the text---
-            byte[] bytesToRead = new byte[client.ReceiveBufferSize];
-            int bytesRead = nwStream.Read(bytesToRead, 0, client.ReceiveBufferSize);
+            byte[] bytesToRead = new byte[1092357];// 819254];// client.ReceiveBufferSize];
+            int bytesRead = nwStream.Read(bytesToRead, 0, 1092357);// 819254);// client.ReceiveBufferSize);
             Console.WriteLine("Received : " + Encoding.ASCII.GetString(bytesToRead, 0, bytesRead));
             Console.ReadLine();
-            client.Close();
+
+
+            string dataStr = Encoding.Default.GetString(bytesToRead, 0, bytesToRead.Length);
+            TCPUpdateData data = JsonConvert.DeserializeObject<TCPUpdateData>(dataStr);
+
+            System.Drawing.Image img = byteArrayToImage(data.DepthImage);
+
+            canvas.Source = ConvertToBitmapImage(img);
+            //client.Close();
         }
+
+
+        public static System.Drawing.Image byteArrayToImage(byte[] byteArrayIn)
+        {
+            MemoryStream ms = new MemoryStream(byteArrayIn);
+            System.Drawing.Image returnImage = System.Drawing.Image.FromStream(ms);
+            return returnImage;
+        }
+
+        public static BitmapImage ConvertToBitmapImage(System.Drawing.Image img)
+        {
+            using (var memory = new MemoryStream())
+            {
+                img.Save(memory, ImageFormat.Png);
+                memory.Position = 0;
+
+                var bitmapImage = new BitmapImage();
+                bitmapImage.BeginInit();
+                bitmapImage.StreamSource = memory;
+                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                bitmapImage.EndInit();
+
+                return bitmapImage;
+            }
+        }
+
+
     }
     
 }

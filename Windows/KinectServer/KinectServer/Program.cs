@@ -6,9 +6,22 @@ using System.Text;
 using System.Net;      //required
 using System.Net.Sockets;    //required
 using System.Drawing;
+using System.IO;
+using Newtonsoft.Json;
 
 namespace KinectServer
 {
+    class TCPMetadata
+    {
+
+    }
+
+    class TCPUpdateData
+    {
+        public byte[] DepthImage; 
+    }
+
+
     class Program
     {
         const int PORT_NO = 5000;
@@ -27,8 +40,8 @@ namespace KinectServer
 
             //---get the incoming data through a network stream---
             NetworkStream nwStream = client.GetStream();
-            byte[] buffer = new byte[client.ReceiveBufferSize];
-            /*
+            /*byte[] buffer = new byte[client.ReceiveBufferSize];
+            
             //---read incoming stream---
             int bytesRead = nwStream.Read(buffer, 0, client.ReceiveBufferSize);
 
@@ -54,12 +67,29 @@ namespace KinectServer
                 Image i = RandomImage();
                 byte[] ibytes = ImageToByte(i);
 
-                nwStream.Write(ibytes, 0, ibytes.Length);
+                //Image img = byteArrayToImage(ibytes);
+
+
+                TCPUpdateData data = new TCPUpdateData()
+                {
+                    DepthImage = ibytes
+                };
+
+                String dataStr = JsonConvert.SerializeObject(data);
+                byte[] dataBytes = ToByteArray(dataStr);
+
+                nwStream.Write(dataBytes, 0, dataBytes.Length);
+                //nwStream.Write(ibytes, 0, ibytes.Length);
 
                 counter++;
             }
         }
 
+        public static byte[] ToByteArray(string str)
+        {
+            Encoding encoding = Encoding.Default;
+            return encoding.GetBytes(str);
+        }
 
         private static Bitmap RandomImage()
         {
@@ -90,10 +120,19 @@ namespace KinectServer
             return bmp;
         }
 
+
+        public static System.Drawing.Image byteArrayToImage(byte[] byteArrayIn)
+        {
+            MemoryStream ms = new MemoryStream(byteArrayIn);
+            System.Drawing.Image returnImage = System.Drawing.Image.FromStream(ms);
+            return returnImage;
+        }
+
         public static byte[] ImageToByte(Image img)
         {
-            ImageConverter converter = new ImageConverter();
-            return (byte[])converter.ConvertTo(img, typeof(byte[]));
+            MemoryStream ms = new MemoryStream();
+            img.Save(ms, System.Drawing.Imaging.ImageFormat.Bmp);
+            return ms.ToArray();
         }
     }
 }
