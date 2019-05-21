@@ -78,15 +78,21 @@ namespace KinectServer.TCP
             //Creamos el objeto que se enviará
             TCPUpdateData data = new TCPUpdateData()
             {
-                DepthImage = TCPHelpers.ImageToByteArray(i)
+                DepthImage = TCPHelpers.ImageToString(i) //TCPHelpers.ImageToByteArray(i)
             };
 
             //Serializamos los datos para enviarlos por TCP
             String dataStr = JsonConvert.SerializeObject(data);
             byte[] dataBytes = TCPHelpers.StringToByteArray(dataStr);
+            byte[] size = BitConverter.GetBytes(dataBytes.Length);
+
+            //Concatena los arrays
+            byte[] rv = new byte[size.Length + dataBytes.Length];
+            System.Buffer.BlockCopy(size, 0, rv, 0, size.Length);
+            System.Buffer.BlockCopy(dataBytes, 0, rv, size.Length, dataBytes.Length);
 
             //Escribimos en el canal de salida
-            nwStream.Write(dataBytes, 0, dataBytes.Length);
+            nwStream.Write(rv, 0, rv.Length);
 
             Console.WriteLine("Sent " + dataBytes.Length + " bytes");
         }

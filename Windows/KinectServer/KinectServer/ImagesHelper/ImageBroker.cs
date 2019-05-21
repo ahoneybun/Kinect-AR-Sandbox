@@ -19,7 +19,7 @@ namespace KinectServer.ImagesHelper
                 Console.WriteLine("Generating new image");
 
 
-                int width = 640, height = 320;
+                int width = 20, height = 20;
 
                 //bitmap
                 Bitmap bmp = new Bitmap(width, height);

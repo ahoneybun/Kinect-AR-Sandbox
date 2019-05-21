@@ -8,6 +8,8 @@ namespace KinectServer.TCP
 {
     class TCPUpdateData
     {
-        public byte[] DepthImage;
+        //public byte[] DepthImage;
+        public string DepthImage;
+        //public string Test = "mis palabras son preciosas";
     }
 }

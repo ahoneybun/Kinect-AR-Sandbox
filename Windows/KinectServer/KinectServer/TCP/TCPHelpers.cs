@@ -29,5 +29,34 @@ namespace KinectServer.TCP
             img.Save(ms, System.Drawing.Imaging.ImageFormat.Bmp);
             return ms.ToArray();
         }
+
+        public static string ImageToString(Image image)
+        {
+            using (MemoryStream m = new MemoryStream())
+            {
+                image.Save(m, System.Drawing.Imaging.ImageFormat.Bmp); //RawFormat
+                byte[] imageBytes = m.ToArray();
+                return Convert.ToBase64String(imageBytes);
+            }
+            /*
+
+            if (image == null) return String.Empty;
+
+            var stream = new MemoryStream();
+            image.Save(stream, image.RawFormat);
+            var bytes = stream.ToArray();
+
+            return Convert.ToBase64String(bytes);*/
+        }
+
+        public static Image StringToImage(string base64String)
+        {
+            if (String.IsNullOrWhiteSpace(base64String))
+                return null;
+
+            var bytes = Convert.FromBase64String(base64String);
+            var stream = new MemoryStream(bytes);
+            return Image.FromStream(stream);
+        }
     }
 }

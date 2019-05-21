@@ -33,7 +33,8 @@ namespace KinectClient
 
     class TCPUpdateData
     {
-        public byte[] DepthImage;
+        //public byte[] DepthImage;
+        public string DepthImage;
     }
 
     /// <summary>
@@ -83,8 +84,15 @@ namespace KinectClient
                 {
                     Console.WriteLine("Trying to read");
                     //---read back the text---
-                    byte[] bytesToRead = new byte[1092357];// 819254];// client.ReceiveBufferSize];
-                    int bytesRead = nwStream.Read(bytesToRead, 0, 1092357);// 819254);// client.ReceiveBufferSize);
+                    byte[] sizeBytesToRead = new byte[4];
+                    int sizeBytesRead = nwStream.Read(sizeBytesToRead, 0, 4);
+                    int size = BitConverter.ToInt32(sizeBytesToRead, 0);
+
+                    byte[] bytesToRead = new byte[size];
+                    int bytesRead = nwStream.Read(bytesToRead, 0, size);
+
+                    //byte[] bytesToRead = new byte[1092357];// 819254];// client.ReceiveBufferSize];
+                    //int bytesRead = nwStream.Read(bytesToRead, 0, 1092357);// 819254);// client.ReceiveBufferSize);
                     //Console.WriteLine("Received : " + Encoding.ASCII.GetString(bytesToRead, 0, bytesRead));
                     //Console.ReadLine();
 
@@ -94,16 +102,16 @@ namespace KinectClient
                     TCPUpdateData data = JsonConvert.DeserializeObject<TCPUpdateData>(dataStr);
 
                     Console.WriteLine("Trying to present");
-                    System.Drawing.Image img = byteArrayToImage(data.DepthImage);
-
-
+                    
+                    
+                    System.Drawing.Image img = StringToImage(data.DepthImage);
                     BitmapImage bitmap = ConvertToBitmapImage(img);
                     //canvas.Source.Dispatcher.Invoke(() => canvas.Source = bitmap);
                     canvas.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate()
                     {
                         canvas.Source = bitmap;
                     });
-
+                    
                 }
             }
             catch (Exception ex)
@@ -114,12 +122,22 @@ namespace KinectClient
         }
 
 
+        public static System.Drawing.Image StringToImage(string base64String)
+        {
+            if (String.IsNullOrWhiteSpace(base64String))
+                return null;
+
+            var bytes = Convert.FromBase64String(base64String);
+            var stream = new MemoryStream(bytes);
+            return System.Drawing.Image.FromStream(stream);
+        }
+        /*
         public static System.Drawing.Image byteArrayToImage(byte[] byteArrayIn)
         {
             MemoryStream ms = new MemoryStream(byteArrayIn);
             System.Drawing.Image returnImage = System.Drawing.Image.FromStream(ms);
             return returnImage;
-        }
+        }*/
 
         public static BitmapImage ConvertToBitmapImage(System.Drawing.Image img)
         {
