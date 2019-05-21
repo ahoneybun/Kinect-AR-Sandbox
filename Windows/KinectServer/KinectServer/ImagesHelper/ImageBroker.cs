@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace KinectServer.ImagesHelper
 {
-    class ImageBroker
+    public class ImageBroker
     {
 
         public void GenerateImageThreadFunction()
@@ -55,13 +55,6 @@ namespace KinectServer.ImagesHelper
             Thread thread = new Thread(new ThreadStart(GenerateImageThreadFunction));
             thread.Start();
         }
-
-        //https://stackoverflow.com/questions/9885437/creating-a-custom-event
-        /*
-         * MyDelegate d = new MyDelegate(Sum);           
-
-            int result = d.Invoke(12, 15);
-        */
 
         //https://www.codeproject.com/Articles/11541/The-Simplest-C-Events-Example-Imaginable
         public event NewImageHandler Frame;
