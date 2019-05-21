@@ -8,38 +8,24 @@ using System.Net.Sockets;    //required
 using System.Drawing;
 using System.IO;
 using Newtonsoft.Json;
+using System.Threading;
+using KinectServer.TCP;
 
 namespace KinectServer
 {
-    class TCPMetadata
-    {
-
-    }
-
-    class TCPUpdateData
-    {
-        public byte[] DepthImage; 
-    }
-
-
     class Program
     {
-        const int PORT_NO = 5000;
-        const string SERVER_IP = "127.0.0.1";
-
         static void Main(string[] args)
         {
-            //---listen at the specified IP and port no.---
-            IPAddress localAdd = IPAddress.Parse(SERVER_IP);
-            TcpListener listener = new TcpListener(localAdd, PORT_NO);
-            Console.WriteLine("Listening...");
-            listener.Start();
 
-            //---incoming client connected---
-            TcpClient client = listener.AcceptTcpClient();
+            int PORT_NO = 5000;
+            string SERVER_IP = "127.0.0.1";
 
-            //---get the incoming data through a network stream---
-            NetworkStream nwStream = client.GetStream();
+            TCPServer server = new TCPServer(PORT_NO, SERVER_IP);
+            Thread thread = new Thread(new ThreadStart(server.ListenLoop));
+            thread.Start();
+
+
             /*byte[] buffer = new byte[client.ReceiveBufferSize];
             
             //---read incoming stream---
@@ -56,83 +42,7 @@ namespace KinectServer
             listener.Stop();
             Console.ReadLine();
             */
-
-            int counter = 0;
-            while(true)
-            {
-                
-                System.Threading.Thread.Sleep(5000);
-                Console.WriteLine("Sending back : " + counter);
-
-                Image i = RandomImage();
-                byte[] ibytes = ImageToByte(i);
-
-                //Image img = byteArrayToImage(ibytes);
-
-
-                TCPUpdateData data = new TCPUpdateData()
-                {
-                    DepthImage = ibytes
-                };
-
-                String dataStr = JsonConvert.SerializeObject(data);
-                byte[] dataBytes = ToByteArray(dataStr);
-
-                nwStream.Write(dataBytes, 0, dataBytes.Length);
-                //nwStream.Write(ibytes, 0, ibytes.Length);
-
-                counter++;
-            }
         }
 
-        public static byte[] ToByteArray(string str)
-        {
-            Encoding encoding = Encoding.Default;
-            return encoding.GetBytes(str);
-        }
-
-        private static Bitmap RandomImage()
-        {
-            int width = 640, height = 320;
-
-            //bitmap
-            Bitmap bmp = new Bitmap(width, height);
-
-            //random number
-            Random rand = new Random();
-
-            //create random pixels
-            for (int y = 0; y < height; y++)
-            {
-                for (int x = 0; x < width; x++)
-                {
-                    //generate random ARGB value
-                    int a = rand.Next(256);
-                    int r = rand.Next(256);
-                    int g = rand.Next(256);
-                    int b = rand.Next(256);
-
-                    //set ARGB value
-                    bmp.SetPixel(x, y, Color.FromArgb(a, r, g, b));
-                }
-            }
-
-            return bmp;
-        }
-
-
-        public static System.Drawing.Image byteArrayToImage(byte[] byteArrayIn)
-        {
-            MemoryStream ms = new MemoryStream(byteArrayIn);
-            System.Drawing.Image returnImage = System.Drawing.Image.FromStream(ms);
-            return returnImage;
-        }
-
-        public static byte[] ImageToByte(Image img)
-        {
-            MemoryStream ms = new MemoryStream();
-            img.Save(ms, System.Drawing.Imaging.ImageFormat.Bmp);
-            return ms.ToArray();
-        }
     }
 }

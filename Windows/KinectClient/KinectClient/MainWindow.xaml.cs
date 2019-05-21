@@ -20,6 +20,7 @@ using System.Text;
 using System.IO;
 using System.Drawing.Imaging;
 using Newtonsoft.Json;
+using System.Threading;
 
 namespace KinectClient
 {
@@ -51,35 +52,65 @@ namespace KinectClient
 
         public void Connect()
         {
+
+
+            Thread thread = new Thread(new ThreadStart(WorkThreadFunction));
+            thread.Start();
+            //client.Close();
+        }
+
+
+        public void WorkThreadFunction()
+        {
             const int PORT_NO = 5000;
             const string SERVER_IP = "127.0.0.1";
+            try
+            {
+                //---data to send to the server---
+                string textToSend = DateTime.Now.ToString();
 
-            //---data to send to the server---
-            string textToSend = DateTime.Now.ToString();
+                //---create a TCPClient object at the IP and port no.---
+                TcpClient client = new TcpClient(SERVER_IP, PORT_NO);
+                NetworkStream nwStream = client.GetStream();
+                byte[] bytesToSend = ASCIIEncoding.ASCII.GetBytes(textToSend);
 
-            //---create a TCPClient object at the IP and port no.---
-            TcpClient client = new TcpClient(SERVER_IP, PORT_NO);
-            NetworkStream nwStream = client.GetStream();
-            byte[] bytesToSend = ASCIIEncoding.ASCII.GetBytes(textToSend);
+                //---send the text---
+                Console.WriteLine("Sending : " + textToSend);
+                nwStream.Write(bytesToSend, 0, bytesToSend.Length);
 
-            //---send the text---
-            Console.WriteLine("Sending : " + textToSend);
-            nwStream.Write(bytesToSend, 0, bytesToSend.Length);
+                // do any background work
+                while (true)
+                {
+                    Console.WriteLine("Trying to read");
+                    //---read back the text---
+                    byte[] bytesToRead = new byte[1092357];// 819254];// client.ReceiveBufferSize];
+                    int bytesRead = nwStream.Read(bytesToRead, 0, 1092357);// 819254);// client.ReceiveBufferSize);
+                    //Console.WriteLine("Received : " + Encoding.ASCII.GetString(bytesToRead, 0, bytesRead));
+                    //Console.ReadLine();
 
-            //---read back the text---
-            byte[] bytesToRead = new byte[1092357];// 819254];// client.ReceiveBufferSize];
-            int bytesRead = nwStream.Read(bytesToRead, 0, 1092357);// 819254);// client.ReceiveBufferSize);
-            Console.WriteLine("Received : " + Encoding.ASCII.GetString(bytesToRead, 0, bytesRead));
-            Console.ReadLine();
+                    Console.WriteLine("Trying to decode");
+
+                    string dataStr = Encoding.Default.GetString(bytesToRead, 0, bytesToRead.Length);
+                    TCPUpdateData data = JsonConvert.DeserializeObject<TCPUpdateData>(dataStr);
+
+                    Console.WriteLine("Trying to present");
+                    System.Drawing.Image img = byteArrayToImage(data.DepthImage);
 
 
-            string dataStr = Encoding.Default.GetString(bytesToRead, 0, bytesToRead.Length);
-            TCPUpdateData data = JsonConvert.DeserializeObject<TCPUpdateData>(dataStr);
+                    BitmapImage bitmap = ConvertToBitmapImage(img);
+                    //canvas.Source.Dispatcher.Invoke(() => canvas.Source = bitmap);
+                    canvas.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate()
+                    {
+                        canvas.Source = bitmap;
+                    });
 
-            System.Drawing.Image img = byteArrayToImage(data.DepthImage);
-
-            canvas.Source = ConvertToBitmapImage(img);
-            //client.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                // log errors
+                Console.WriteLine("Exception " + ex.Message);
+            }
         }
 
 
@@ -102,6 +133,7 @@ namespace KinectClient
                 bitmapImage.StreamSource = memory;
                 bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
                 bitmapImage.EndInit();
+                bitmapImage.Freeze(); //https://stackoverflow.com/questions/45893536/updating-image-source-from-a-separate-thread-in-wpf
 
                 return bitmapImage;
             }
