@@ -55,7 +55,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TCP\TCPHelpers.cs" />
     <Compile Include="TCP\TCPMetadata.cs" />
-    <Compile Include="TCP\TCPServer.cs" />
+    <Compile Include="TCP\TCPServerController.cs" />
     <Compile Include="TCP\TCPUpdateData.cs" />
   </ItemGroup>
   <ItemGroup>

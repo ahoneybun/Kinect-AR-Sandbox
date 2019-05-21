@@ -21,8 +21,8 @@ namespace KinectServer
             int PORT_NO = 5000;
             string SERVER_IP = "127.0.0.1";
 
-            TCPServer server = new TCPServer(PORT_NO, SERVER_IP);
-            Thread thread = new Thread(new ThreadStart(server.ListenLoop));
+            TCPServerController server = new TCPServerController(PORT_NO, SERVER_IP);
+            Thread thread = new Thread(new ThreadStart(server.Start));
             thread.Start();
 
 
