@@ -18,11 +18,11 @@ namespace KinectServer.TCP
             i.Frame += new ImageBroker.NewImageHandler(NewFrameProcessor);
         }
 
-        public void NewFrameProcessor(Bitmap data, EventArgs e)
+        public void NewFrameProcessor(Bitmap depthImage, Bitmap colorImage, EventArgs e)
         {
             if (Server != null)
             {
-                Server.Send(data);
+                Server.Send(depthImage, colorImage);
             }
         }
     }

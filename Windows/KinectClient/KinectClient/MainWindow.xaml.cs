@@ -26,15 +26,11 @@ namespace KinectClient
 {
 
 
-    class TCPMetadata
-    {
-
-    }
 
     class TCPUpdateData
     {
         //public byte[] DepthImage;
-        public string DepthImage;
+        public string Image;
     }
 
     /// <summary>
@@ -104,7 +100,7 @@ namespace KinectClient
                     Console.WriteLine("Trying to present");
                     
                     
-                    System.Drawing.Image img = StringToImage(data.DepthImage);
+                    System.Drawing.Image img = StringToImage(data.Image);
                     BitmapImage bitmap = ConvertToBitmapImage(img);
                     //canvas.Source.Dispatcher.Invoke(() => canvas.Source = bitmap);
                     canvas.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate()

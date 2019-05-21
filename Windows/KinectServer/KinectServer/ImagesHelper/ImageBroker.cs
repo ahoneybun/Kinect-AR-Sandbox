@@ -45,7 +45,7 @@ namespace KinectServer.ImagesHelper
 
                 if (Frame != null)
                 {
-                    Frame(bmp, e);
+                    Frame(bmp, bmp, e);
                 }
             }
         }
@@ -59,7 +59,7 @@ namespace KinectServer.ImagesHelper
         //https://www.codeproject.com/Articles/11541/The-Simplest-C-Events-Example-Imaginable
         public event NewImageHandler Frame;
         public EventArgs e = null;
-        public delegate void NewImageHandler(Bitmap o, EventArgs e);
+        public delegate void NewImageHandler(Bitmap depthImage, Bitmap colorImage, EventArgs e);
 
 
     }

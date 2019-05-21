@@ -49,16 +49,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DataProcessor\GenericProcessor.cs" />
+    <Compile Include="DataProcessor\IDataProcessor.cs" />
     <Compile Include="ImagesHelper\ImageBroker.cs" />
     <Compile Include="ImagesHelper\ImageHelper.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TCP\DataListener.cs" />
     <Compile Include="TCP\TCPHelpers.cs" />
-    <Compile Include="TCP\TCPMetadata.cs" />
     <Compile Include="TCP\TCPServer.cs" />
     <Compile Include="TCP\TCPServerController.cs" />
-    <Compile Include="TCP\TCPUpdateData.cs" />
+    <Compile Include="TCP\TCPData.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

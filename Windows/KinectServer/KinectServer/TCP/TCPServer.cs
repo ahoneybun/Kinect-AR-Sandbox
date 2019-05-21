@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using KinectServer.DataProcessor;
 using Newtonsoft.Json;
 
 namespace KinectServer.TCP
@@ -17,16 +18,19 @@ namespace KinectServer.TCP
     {
         TcpClient client;
         NetworkStream nwStream;
+        IDataProcessor DataProcessor;
 
         //Obtenemos una marca temporal con la que calcularemos los FPS
         DateTime fpsTime = DateTime.MinValue;
 
         TcpListener listener;
 
-        public TCPServer(int port, string ip)
+        public TCPServer(int port, string ip, IDataProcessor dataProcessor)
         {
             client = null;
             nwStream = null;
+
+            DataProcessor = dataProcessor;
 
             //---listen at the specified IP and port no.---
             IPAddress localAdd = IPAddress.Parse(ip);
@@ -35,7 +39,7 @@ namespace KinectServer.TCP
             listener.Start();
         }
 
-        public void Send(Bitmap data)
+        public void Send(Bitmap depthImage, Bitmap colorImage)
         {
             try
             {
@@ -48,6 +52,13 @@ namespace KinectServer.TCP
                     nwStream = client.GetStream();
                     Console.WriteLine("Client connected ");
                 }
+
+                //Creamos el objeto que se enviará
+                ProcessedData pData = DataProcessor.GetProcessedData(depthImage, colorImage);
+                TCPData data = new TCPData()
+                {
+                    Image = TCPHelpers.ImageToString(pData.Image) //TCPHelpers.ImageToByteArray(i)
+                };
 
                 //Una vez que hay un cliente, enviamos los datos
                 SendData(nwStream, data);
@@ -71,15 +82,9 @@ namespace KinectServer.TCP
         /// </summary>
         /// <param name="nwStream"></param>
         /// <param name="i"></param>
-        private static void SendData(NetworkStream nwStream, Image i)
+        private void SendData(NetworkStream nwStream, TCPData data)
         {
             Console.WriteLine("Sending data...");
-
-            //Creamos el objeto que se enviará
-            TCPUpdateData data = new TCPUpdateData()
-            {
-                DepthImage = TCPHelpers.ImageToString(i) //TCPHelpers.ImageToByteArray(i)
-            };
 
             //Serializamos los datos para enviarlos por TCP
             String dataStr = JsonConvert.SerializeObject(data);
