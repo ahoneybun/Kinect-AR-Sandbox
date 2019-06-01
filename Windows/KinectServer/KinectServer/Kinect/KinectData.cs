@@ -8,6 +8,7 @@ namespace KinectServer.Kinect
 {
     public class KinectData
     {
+        public long Timestamp;
         public Microsoft.Kinect.DepthImagePixel[] DepthArray;
         public int DepthWidth;
         public int DepthHeight;
@@ -16,6 +17,8 @@ namespace KinectServer.Kinect
 
         public KinectData(Microsoft.Kinect.DepthImagePixel[] depthPixels, int depthWidth, int depthHeight, int minDepth, int maxDepth)
         {
+            Timestamp = DateTime.UtcNow.Ticks;
+
             DepthArray = depthPixels;//depthPixels.Select(pixel => pixel.Depth).ToArray();
             DepthWidth = depthWidth;
             DepthHeight = depthHeight;

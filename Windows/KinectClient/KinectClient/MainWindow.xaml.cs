@@ -27,6 +27,7 @@ namespace KinectClient
 {
     class TCPData
     {
+        public long Timestamp;
         public Dictionary<string, string> Metadata;
 
         public int W;
@@ -94,28 +95,38 @@ namespace KinectClient
             try
             {
                 //---data to send to the server---
-                string textToSend = DateTime.Now.ToString();
 
                 //---create a TCPClient object at the IP and port no.---
                 TcpClient client = new TcpClient(SERVER_IP, PORT_NO);
-                NetworkStream nwStream = client.GetStream();
-                byte[] bytesToSend = ASCIIEncoding.ASCII.GetBytes(textToSend);
+                NetworkStream ns = client.GetStream();
+
+                StreamReader nsReader = new StreamReader(ns);
+                StreamWriter nsWriter = new StreamWriter(ns);
+                ns.Flush();
+                nsWriter.AutoFlush = true;
 
                 //---send the text---
-                Console.WriteLine("Sending : " + textToSend);
-                nwStream.Write(bytesToSend, 0, bytesToSend.Length);
+                //Console.WriteLine("Sending : " + textToSend);
+                //ns.Write(BitConverter.GetBytes(textToSend), 0, BitConverter.GetBytes(textToSend).Length);
 
                 // do any background work
                 while (true)
                 {
                     Console.WriteLine("Trying to read");
+
+
+                    string dataStr = nsReader.ReadLine();
+                    /*
                     //---read back the text---
                     byte[] sizeBytesToRead = new byte[4];
-                    int sizeBytesRead = nwStream.Read(sizeBytesToRead, 0, 4);
+                    int sizeBytesRead = ns.Read(sizeBytesToRead, 0, 4);
                     int size = BitConverter.ToInt32(sizeBytesToRead, 0);
 
                     byte[] bytesToRead = new byte[size];
-                    int bytesRead = nwStream.Read(bytesToRead, 0, size);
+                    int bytesRead = ns.Read(bytesToRead, 0, size);
+                    */
+
+
 
                     //byte[] bytesToRead = new byte[1092357];// 819254];// client.ReceiveBufferSize];
                     //int bytesRead = nwStream.Read(bytesToRead, 0, 1092357);// 819254);// client.ReceiveBufferSize);
@@ -124,7 +135,7 @@ namespace KinectClient
 
                     Console.WriteLine("Trying to decode");
 
-                    string dataStr = Encoding.Default.GetString(bytesToRead, 0, bytesToRead.Length);
+                    //string dataStr = Encoding.Default.GetString(bytesToRead, 0, bytesToRead.Length);
                     TCPData data = JsonConvert.DeserializeObject<TCPData>(dataStr);
 
                     Console.WriteLine("Trying to parse");
@@ -180,6 +191,15 @@ namespace KinectClient
                     {
                         canvas.Source = bitmap;
                     });
+
+
+                    //Escribimos en el canal de salida
+
+
+                    Console.WriteLine("Response to server " + data.Timestamp);
+                    //ns.Write(BitConverter.GetBytes(data.Timestamp), 0, sizeof(int));
+                    nsWriter.WriteLine(data.Timestamp.ToString());
+                    nsWriter.Flush();
 
                 }
             }

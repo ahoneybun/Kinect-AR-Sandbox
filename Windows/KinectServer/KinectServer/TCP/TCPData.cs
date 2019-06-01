@@ -8,6 +8,7 @@ namespace KinectServer.TCP
 {
     public class TCPData
     {
+        public long Timestamp;
         public Dictionary<string, string> Metadata;
     }
 }
