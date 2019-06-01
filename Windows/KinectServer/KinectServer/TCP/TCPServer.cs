@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using KinectServer.DataProcessor;
+using KinectServer.Kinect;
 using Newtonsoft.Json;
 
 namespace KinectServer.TCP
@@ -39,7 +40,7 @@ namespace KinectServer.TCP
             listener.Start();
         }
 
-        public void Send(Bitmap depthImage, Bitmap colorImage)
+        public void Send(KinectData kinectData)
         {
             try
             {
@@ -54,11 +55,7 @@ namespace KinectServer.TCP
                 }
 
                 //Creamos el objeto que se enviará
-                ProcessedData pData = DataProcessor.GetProcessedData(depthImage, colorImage);
-                TCPData data = new TCPData()
-                {
-                    Image = TCPHelpers.ImageToString(pData.Image) //TCPHelpers.ImageToByteArray(i)
-                };
+                TCPData data = DataProcessor.GetProcessedData(kinectData);
 
                 //Una vez que hay un cliente, enviamos los datos
                 SendData(nwStream, data);

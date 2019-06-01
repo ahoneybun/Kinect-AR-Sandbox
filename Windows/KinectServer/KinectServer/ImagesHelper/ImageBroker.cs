@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -19,10 +20,10 @@ namespace KinectServer.ImagesHelper
                 Console.WriteLine("Generating new image");
 
 
-                int width = 20, height = 20;
+                int width = 320, height = 240;
 
                 //bitmap
-                Bitmap bmp = new Bitmap(width, height);
+                Bitmap bmp = new Bitmap(width, height);//, PixelFormat.Format16bppGrayScale);
 
                 //random number
                 Random rand = new Random();
@@ -38,16 +39,33 @@ namespace KinectServer.ImagesHelper
                         int g = rand.Next(256);
                         int b = rand.Next(256);
 
+                        Color oc = Color.FromArgb(a, r, g, b);
+
+                        int grayScale = (int)((oc.R * 0.3) + (oc.G * 0.59) + (oc.B * 0.11));
+                        Color nc = Color.FromArgb(oc.A, grayScale, grayScale, grayScale);
+
                         //set ARGB value
-                        bmp.SetPixel(x, y, Color.FromArgb(a, r, g, b));
+                        bmp.SetPixel(x, y, nc);
                     }
                 }
 
+
+
                 if (Frame != null)
                 {
-                    Frame(bmp, bmp, e);
+                    Bitmap bmp16 = ConvertTo16bpp(bmp);
+                    Frame(bmp16, bmp16, e);
                 }
             }
+        }
+
+        public static Bitmap ConvertTo16bpp(Image img)
+        {
+            var bmp = new Bitmap(img.Width, img.Height,
+                          System.Drawing.Imaging.PixelFormat.Format16bppRgb555);
+            using (var gr = Graphics.FromImage(bmp))
+                gr.DrawImage(img, new Rectangle(0, 0, img.Width, img.Height));
+            return bmp;
         }
 
         public void ImageFabrik()

@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using KinectServer.DataProcessor;
 using KinectServer.ImagesHelper;
+using KinectServer.Kinect;
 using Newtonsoft.Json;
 
 namespace KinectServer.TCP
@@ -18,7 +19,7 @@ namespace KinectServer.TCP
     class TCPServerController
     {
         TCPServer Server;
-        ImageBroker imageProducer;
+        KinectController imageProducer;
         DataListener frameListener;
 
         public TCPServerController(int port, string ip)
@@ -26,7 +27,7 @@ namespace KinectServer.TCP
             IDataProcessor processor = new GenericProcessor();
 
             //Escuchamos y arrancamos el productor de datos
-            imageProducer = new ImageBroker();
+            imageProducer = new KinectController();
             frameListener = new DataListener();
             Server = new TCPServer(port, ip, processor);
         }
@@ -34,7 +35,7 @@ namespace KinectServer.TCP
         public void Start()
         {
             frameListener.Subscribe(imageProducer);
-            imageProducer.ImageFabrik();
+            imageProducer.StartSensor();
 
             //Start TCPServer
             frameListener.Server = Server;

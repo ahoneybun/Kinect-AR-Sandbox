@@ -21,16 +21,46 @@ using System.IO;
 using System.Drawing.Imaging;
 using Newtonsoft.Json;
 using System.Threading;
+using System.Drawing;
 
 namespace KinectClient
 {
-
-
-
-    class TCPUpdateData
+    class TCPData
     {
-        //public byte[] DepthImage;
-        public string Image;
+        public Dictionary<string, string> Metadata;
+
+        public int W;
+        public int H;
+
+        public int MAX;
+        public int MIN;
+
+        public short[] ToDepth()
+        {
+            const string KEY_DEPTH_ARRAY = "DepthArray";
+            const string KEY_DEPTH_WIDTH = "DepthWidth";
+            const string KEY_DEPTH_HEIGHT = "DepthHeight";
+            const string KEY_DEPTH_MIN = "MinDepth";
+            const string KEY_DEPTH_MAX = "MaxDepth";
+
+            W = Convert.ToInt32(Metadata[KEY_DEPTH_WIDTH]);
+            H = Convert.ToInt32(Metadata[KEY_DEPTH_HEIGHT]);
+            MAX = Convert.ToInt32(Metadata[KEY_DEPTH_MAX]);
+
+            string depthsString = Base64Decode(Metadata[KEY_DEPTH_ARRAY]);
+
+            //convertimos la searializacion string en un array de shorts
+            short[] depths = depthsString.Select(character => Convert.ToInt16(character)).ToArray();
+            //int[] depths = depthsString.Select(character => (int)Char.GetNumericValue(character)).ToArray();
+            
+            return depths;
+        }
+
+        public static string Base64Decode(string base64EncodedData)
+        {
+            var base64EncodedBytes = System.Convert.FromBase64String(base64EncodedData);
+            return System.Text.Encoding.UTF8.GetString(base64EncodedBytes);
+        }
     }
 
     /// <summary>
@@ -95,19 +125,62 @@ namespace KinectClient
                     Console.WriteLine("Trying to decode");
 
                     string dataStr = Encoding.Default.GetString(bytesToRead, 0, bytesToRead.Length);
-                    TCPUpdateData data = JsonConvert.DeserializeObject<TCPUpdateData>(dataStr);
+                    TCPData data = JsonConvert.DeserializeObject<TCPData>(dataStr);
+
+                    Console.WriteLine("Trying to parse");
+
+                    short[] depths = data.ToDepth();
+
 
                     Console.WriteLine("Trying to present");
+
+                    /*
+                    WriteableBitmap bitmap = new WriteableBitmap(data.W, data.H, 96.0, 96.0, PixelFormats.Bgr32, null);
+                    bitmap.WritePixels(
+                        new Int32Rect(0, 0, bitmap.PixelWidth, bitmap.PixelHeight),
+                        depths,
+                        bitmap.PixelWidth * sizeof(int),
+                        0);
+                    bitmap.Freeze();
+                    */
+
                     
+                    Bitmap bmp = new Bitmap(data.W, data.H);
+
+                    int x = 0;
+                    int y = -1;
+                    for (int i = 0; i < depths.Length; i++)
+                    {
+                        int a = Convert.ToInt16((depths[i] / (float)data.MAX) * 255);
+                        System.Drawing.Color nc = System.Drawing.Color.FromArgb(255, a, a, a);
+                        
                     
-                    System.Drawing.Image img = StringToImage(data.Image);
-                    BitmapImage bitmap = ConvertToBitmapImage(img);
+                        if (i % data.W == 0)
+                        {
+                            x = 0;
+                            y++;
+                        } else
+                        {
+                            x++;
+                        }
+
+                        //set ARGB value
+                        bmp.SetPixel(x, y, nc);
+
+                    }
+                    
+
+                    
+
+                    BitmapImage bitmap = ConvertToBitmapImage(bmp);
+
+                    
                     //canvas.Source.Dispatcher.Invoke(() => canvas.Source = bitmap);
-                    canvas.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate()
+                    canvas.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate ()
                     {
                         canvas.Source = bitmap;
                     });
-                    
+
                 }
             }
             catch (Exception ex)
@@ -116,6 +189,7 @@ namespace KinectClient
                 Console.WriteLine("Exception " + ex.Message);
             }
         }
+
 
 
         public static System.Drawing.Image StringToImage(string base64String)
@@ -155,5 +229,5 @@ namespace KinectClient
 
 
     }
-    
+
 }

@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using KinectServer.ImagesHelper;
+using KinectServer.Kinect;
+using Microsoft.Kinect;
 
 namespace KinectServer.TCP
 {
@@ -13,16 +9,16 @@ namespace KinectServer.TCP
     {
         public TCPServer Server { get; set; }
 
-        public void Subscribe(ImageBroker i)
+        public void Subscribe(KinectController i)
         {
-            i.Frame += new ImageBroker.NewImageHandler(NewFrameProcessor);
+            i.Frame += new KinectController.NewImageHandler(NewFrameProcessor);
         }
 
-        public void NewFrameProcessor(Bitmap depthImage, Bitmap colorImage, EventArgs e)
+        public void NewFrameProcessor(KinectData depth, EventArgs e)
         {
             if (Server != null)
             {
-                Server.Send(depthImage, colorImage);
+                Server.Send(depth);
             }
         }
     }

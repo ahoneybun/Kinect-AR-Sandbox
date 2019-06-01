@@ -15,6 +15,7 @@ namespace KinectServer
 {
     class Program
     {
+
         static void Main(string[] args)
         {
 
@@ -26,6 +27,11 @@ namespace KinectServer
             Thread thread = new Thread(new ThreadStart(server.Start));
             thread.Start();
 
+
+            while(true)
+            {
+                Thread.Sleep(50);
+            }
 
             /*byte[] buffer = new byte[client.ReceiveBufferSize];
             

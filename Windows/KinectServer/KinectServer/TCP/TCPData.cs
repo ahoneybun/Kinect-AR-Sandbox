@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace KinectServer.TCP
 {
-    class TCPData
+    public class TCPData
     {
-        public string Image;
+        public Dictionary<string, string> Metadata;
     }
 }
