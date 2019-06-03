@@ -9,13 +9,13 @@ namespace KinectServer.Kinect
     public class KinectData
     {
         public long Timestamp;
-        public Microsoft.Kinect.DepthImagePixel[] DepthArray;
+        public short[] DepthArray;
         public int DepthWidth;
         public int DepthHeight;
-        public int MinDepth;
-        public int MaxDepth;
+        public short MinDepth;
+        public short MaxDepth;
 
-        public KinectData(Microsoft.Kinect.DepthImagePixel[] depthPixels, int depthWidth, int depthHeight, int minDepth, int maxDepth)
+        public KinectData(short[] depthPixels, int depthWidth, int depthHeight, short minDepth, short maxDepth)
         {
             Timestamp = DateTime.UtcNow.Ticks;
 

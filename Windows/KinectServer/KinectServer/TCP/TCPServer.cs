@@ -30,11 +30,13 @@ namespace KinectServer.TCP
 
         TcpListener listener;
 
+        /// <summary>
+        /// Prepara y crea el servidor TCP
+        /// </summary>
         public TCPServer(int port, string ip, IDataProcessor dataProcessor)
         {
             client = null;
             ns = null;
-
             DataProcessor = dataProcessor;
 
             //---listen at the specified IP and port no.---
@@ -44,89 +46,57 @@ namespace KinectServer.TCP
             listener.Start();
         }
 
+        /// <summary>
+        /// Envia datos y espera a que el cliente los procese
+        /// </summary>
         public void Send(KinectData kinectData)
         {
+            //Si el cliente no está conectado, esperamos a que se conecte
+            if (client == null || !client.Connected)
+            {
+                Console.WriteLine("Awaiting Client ");
 
-                //Si el cliente no está conectado, esperamos a que se conecte
-                if (client == null || !client.Connected)
-                {
-                    Console.WriteLine("Awaiting Client ");
-                    client = listener.AcceptTcpClient();
-                    ns = client.GetStream();
-
-                    nsWriter = new StreamWriter(ns);
-                    nsReader = new StreamReader(ns);
+                client = listener.AcceptTcpClient();
+                ns = client.GetStream();
+                nsWriter = new StreamWriter(ns);
+                nsReader = new StreamReader(ns);
                     
-                    nsWriter.AutoFlush = true;
+                nsWriter.AutoFlush = true;
 
-                    Console.WriteLine("Client connected ");
-                }
+                Console.WriteLine("Client connected ");
+            }
 
-                try
-                {
+            try
+            {
+                //Creamos el objeto que se enviará
+                TCPData data = DataProcessor.GetProcessedData(kinectData);
+                data.Timestamp = kinectData.Timestamp;
 
+                //Enviamos el dato
+                Console.WriteLine("Sending data...");
+                String dataStr = JsonConvert.SerializeObject(data);
+                nsWriter.WriteLine(dataStr);
+                nsWriter.Flush();
 
-                    //Creamos el objeto que se enviará
-                    TCPData data = DataProcessor.GetProcessedData(kinectData);
-                    data.Timestamp = kinectData.Timestamp;
+                //Esperamos un ACK del cliente (en este periodo no enviaremos más datos)
+                //el dato devuelto es el Timestamp de la imagen procesada
+                Console.WriteLine("Wait client response...");
+                long processed = Convert.ToInt64(nsReader.ReadLine());
 
-                    SendData(ns, data);
+            }
 
+            catch (Exception ex)
+            {
+                Console.WriteLine("Exception: " + ex.Message + " (Client Connected? " + client.Connected + ")");
+            }
+            finally
+            {
+                ///Calculamos los FPS a los que estamos emitiendo mensajes
+                Console.WriteLine("FPS (aprox): " + 1 / (DateTime.UtcNow - fpsTime).TotalSeconds);
 
-                    //Esperamos un ACK del cliente (en este periodo no enviaremos más datos)
-                    //el dato devuelto es el Timestamp de la imagen procesada
-                    Console.WriteLine("Wait client response...");
-                    /*byte[] bytesToRead = new byte[sizeof(int)];
-                    ns.Read(bytesToRead, 0, bytesToRead.Length);
-                    int response = BitConverter.ToInt32(bytesToRead, 0);*/
-                    long processed = Convert.ToInt64(nsReader.ReadLine());
-
-                }
-
-                catch (Exception ex)
-                {
-                    Console.WriteLine("Exception: " + ex.Message + " (Client Connected? " + client.Connected + ")");
-                }
-                finally
-                {
-                    ///Calculamos los FPS a los que estamos emitiendo mensajes
-                    Console.WriteLine("FPS (aprox): " + 1 / (DateTime.UtcNow - fpsTime).TotalSeconds);
-
-                    //Obtenemos la siguiente marca temporal con la que calcularemos los FPS
-                    fpsTime = DateTime.UtcNow;
-                }
-        }
-
-        /// <summary>
-        /// Prepara un bloque de datos y lo envia al cliente
-        /// </summary>
-        /// <param name="nwStream"></param>
-        /// <param name="i"></param>
-        private void SendData(NetworkStream nwStream, TCPData data)
-        {
-            Console.WriteLine("Sending data...");
-
-            
-            //Serializamos los datos para enviarlos por TCP
-            String dataStr = JsonConvert.SerializeObject(data);
-            /*
-            byte[] dataBytes = TCPHelpers.StringToByteArray(dataStr);
-            byte[] size = BitConverter.GetBytes(dataBytes.Length);
-
-            //Concatena los arrays
-            byte[] rv = new byte[size.Length + dataBytes.Length];
-            System.Buffer.BlockCopy(size, 0, rv, 0, size.Length);
-            System.Buffer.BlockCopy(dataBytes, 0, rv, size.Length, dataBytes.Length);
-
-            //Escribimos en el canal de salida
-            nwStream.Write(rv, 0, rv.Length);
-            */
-
-            nsWriter.WriteLine(dataStr);
-            nsWriter.Flush();
-            
-            //Console.WriteLine("Sent " + dataBytes.Length + " bytes");
-
+                //Obtenemos la siguiente marca temporal con la que calcularemos los FPS
+                fpsTime = DateTime.UtcNow;
+            }
         }
     }
 }

@@ -54,6 +54,7 @@
     <Compile Include="DataProcessor\IDataProcessor.cs" />
     <Compile Include="ImagesHelper\ImageBroker.cs" />
     <Compile Include="ImagesHelper\ImageHelper.cs" />
+    <Compile Include="Kinect\DepthFixer.cs" />
     <Compile Include="Kinect\KinectController.cs" />
     <Compile Include="Kinect\KinectData.cs" />
     <Compile Include="Program.cs" />

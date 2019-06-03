@@ -45,9 +45,27 @@ namespace KinectServer.DataProcessor
                 depthsChar[i] = Convert.ToChar(kinectData.DepthArray[i].Depth);
             }
             */
+            /*
+            for(int i = 0; i < kinectData.DepthArray.Length; i++)
+            {
+                short mm = kinectData.DepthArray[i].Depth;
+
+                if (mm < min)
+                {
+                    mm = min;
+                }
+                else if (mm > max)
+                {
+
+                }
+            }*/
 
 
-            char[] depthsChar = kinectData.DepthArray.Select(pixel => pixel.Depth > max ? Convert.ToChar(max) : (pixel.Depth < min ? Convert.ToChar(min) : Convert.ToChar(pixel.Depth))).ToArray();
+            char[] depthsChar = kinectData.DepthArray.Select(pixel => Convert.ToChar(pixel)).ToArray();//kinectData.DepthArray.Select(pixel => pixel > max ? Convert.ToChar(max) : (pixel < min ? Convert.ToChar(min) : Convert.ToChar(pixel))).ToArray();
+
+
+            //char[] depthsChar = kinectData.DepthArray.Select(pixel => Convert.ToChar(pixel.Depth)).ToArray();
+
             string depthsArray = new string(depthsChar);
             /*
 

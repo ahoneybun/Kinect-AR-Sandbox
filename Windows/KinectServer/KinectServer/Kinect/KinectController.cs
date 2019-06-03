@@ -22,18 +22,25 @@ namespace KinectServer.Kinect
         /// </summary>
         private DepthImagePixel[] depthPixels;
 
-        private int Width;
-        private int Height;
+        private const int Width = 320; //320
+        private const int Height = 240; //240
 
         private int fpsController = 0;
         private int FPS_MOD = 1; //30 = 1 por segundo
 
+        private const int MinDepthRange = 800;//mm
+        private const int MaxDepthRange = 4000;//mm
+
+        DepthFixer DepthFixer;
 
         /// <summary>
         /// Execute startup tasks
         /// </summary>
         public void StartSensor()
         {
+            DepthFixer = new DepthFixer(true, true, false, 10, 16, 20);
+
+
             // Look through all sensors and start the first connected one.
             // This requires that a Kinect is connected at the time of app startup.
             // To make your app robust against plug/unplug, 
@@ -48,12 +55,15 @@ namespace KinectServer.Kinect
             }
 
             //this.sensor.DepthStream.Range = DepthRange.Near;
-            this.sensor.DepthStream.Range = DepthRange.Default;
+            //this.sensor.DepthStream.Range = DepthRange.Default;
 
             // Turn on the depth stream to receive depth frames
-            this.sensor.DepthStream.Enable(DepthImageFormat.Resolution320x240Fps30);
-            Width = 320;
-            Height = 240;
+            if (Width == 640)
+            {
+                this.sensor.DepthStream.Enable(DepthImageFormat.Resolution640x480Fps30);
+            } else {
+                this.sensor.DepthStream.Enable(DepthImageFormat.Resolution320x240Fps30);
+            }
 
             // Allocate space to put the depth pixels we'll receive
             this.depthPixels = new DepthImagePixel[this.sensor.DepthStream.FramePixelDataLength];
@@ -98,11 +108,15 @@ namespace KinectServer.Kinect
                     // Copy the pixel data from the image to a temporary array
                     depthFrame.CopyDepthImagePixelDataTo(this.depthPixels);
                     // Get the min and max reliable depth for the current frame
-                    int minDepth = depthFrame.MinDepth;
-                    int maxDepth = depthFrame.MaxDepth;
+                    //int minDepth = depthFrame.MinDepth;
+                    //int maxDepth = depthFrame.MaxDepth;
+
+
+                    Console.WriteLine("Depth " + MinDepthRange + "/" + MaxDepthRange + " -> " + this.depthPixels[300].Depth);
 
                     //short[] depthArray = this.depthPixels.Select(pixel => pixel.Depth).ToArray();
-                    KinectData kd = new KinectData(this.depthPixels, Width, Height, minDepth, maxDepth);
+                    short[] depthArray = DepthFixer.Fix(this.depthPixels, Width, Height);
+                    KinectData kd = new KinectData(depthArray, Width, Height, MinDepthRange, MaxDepthRange);
 
                     //sender matrix
 
