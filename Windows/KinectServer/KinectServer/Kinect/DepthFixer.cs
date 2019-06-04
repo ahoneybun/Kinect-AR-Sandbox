@@ -33,6 +33,12 @@ namespace KinectServer.Kinect
 
             this.enableFilter = enableFilter;
             this.enableAverage = enableAverage;
+
+
+            List<BandCoordinate> c = GetBandCoordinates(0, 0, 2, true);
+            c = GetBandCoordinates(0, 0, 2, false);
+            c = GetBandCoordinates(2, 2, 2, false);
+            c = c;
         }
 
 
@@ -126,17 +132,42 @@ namespace KinectServer.Kinect
             public int Y;
         }
 
-        private List<BandCoordinate> GetBandCoordinates(int x, int y, int radius)
+        private List<BandCoordinate> GetBandCoordinates(int x, int y, int radius, bool includeInner = false)
         {
             List<BandCoordinate> coords = new List<BandCoordinate>();
-            BandCoordinate aux;
 
-            for (int yi = -2; yi < 3; yi++)
+            BandCoordinate TopLeft = new BandCoordinate() { X = x - radius, Y = y - radius };
+            BandCoordinate BottomRight = new BandCoordinate() { X = x + radius, Y = y + radius };
+
+            //si queremos incluir tambien los cuadrados interiores
+            if (includeInner)
             {
-                for (int xi = -2; xi < 3; xi++)
+                for (int yi = y - radius; yi <= (y + radius); yi++)
                 {
-                    aux = new BandCoordinate() { X = x + xi, Y = y + yi };
-                    coords.Add(aux);                    
+                    for (int xi = x - radius; xi <= (x + radius); xi++)
+                    {
+                        if (!(xi == x && yi == y)) //ignoramos el centro siempre
+                        {
+                            coords.Add(new BandCoordinate() { X = xi, Y = yi });
+                        }
+                    }
+                }
+            } else
+            {
+                //si solo queremos el borde conforme al radio que hemos definido
+
+                //añadimos los bordes superior e inferior
+                for (int xi = TopLeft.X; xi <= BottomRight.X; xi++)
+                {
+                    coords.Add(new BandCoordinate() { X = xi, Y = TopLeft.Y });
+                    coords.Add(new BandCoordinate() { X = xi, Y = BottomRight.Y });
+                }
+
+                //añadimos los bordes izquierdo y derecho evitando los extremos (que ya hemos añadido anteriormente)
+                for (int yi = TopLeft.Y + 1; yi < BottomRight.Y; yi++)
+                {
+                    coords.Add(new BandCoordinate() { X = TopLeft.X, Y = yi });
+                    coords.Add(new BandCoordinate() { X = BottomRight.X, Y = yi });
                 }
             }
 
