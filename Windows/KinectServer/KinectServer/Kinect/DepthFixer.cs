@@ -120,6 +120,29 @@ namespace KinectServer.Kinect
             }
         }
 
+        public class BandCoordinate
+        {
+            public int X;
+            public int Y;
+        }
+
+        private List<BandCoordinate> GetBandCoordinates(int x, int y, int radius)
+        {
+            List<BandCoordinate> coords = new List<BandCoordinate>();
+            BandCoordinate aux;
+
+            for (int yi = -2; yi < 3; yi++)
+            {
+                for (int xi = -2; xi < 3; xi++)
+                {
+                    aux = new BandCoordinate() { X = x + xi, Y = y + yi };
+                    coords.Add(aux);                    
+                }
+            }
+
+            return coords;
+        }
+
         private short[] CreateFilteredDepthArray(short[] depthArray, int width, int height)
         {
             /////////////////////////////////////////////////////////////////////////////////////
