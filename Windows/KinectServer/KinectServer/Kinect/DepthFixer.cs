@@ -24,15 +24,13 @@ namespace KinectServer.Kinect
 
         private bool enableFilter = false;
         private bool enableAverage = false;
-        private bool enableOutOfBoundsFilter = false;
 
-        public DepthFixer(bool enableOutOfBoundsFilter, bool enableFilter, bool enableAverage, int innerBandThreshold, int outerBandThreshold, int averageFrameCount)
+        public DepthFixer(bool enableFilter, bool enableAverage, int innerBandThreshold, int outerBandThreshold, int averageFrameCount)
         {
             this.innerBandThreshold = innerBandThreshold;
             this.outerBandThreshold = outerBandThreshold;
             this.averageFrameCount = averageFrameCount;
 
-            this.enableOutOfBoundsFilter = enableOutOfBoundsFilter;
             this.enableFilter = enableFilter;
             this.enableAverage = enableAverage;
         }
@@ -125,8 +123,7 @@ namespace KinectServer.Kinect
         private short[] CreateFilteredDepthArray(short[] depthArray, int width, int height)
         {
             /////////////////////////////////////////////////////////////////////////////////////
-            // I will try to comment this as well as I can in here, but you should probably refer
-            // to my Code Project article for a more in depth description of the method.
+            // based on this Codeplex Project https://www.codeproject.com/Articles/317974/KinectDepthSmoothing
             /////////////////////////////////////////////////////////////////////////////////////
 
             short[] smoothDepthArray = new short[depthArray.Length];
@@ -136,12 +133,12 @@ namespace KinectServer.Kinect
             int heightBound = height - 1;
 
             // We process each row in parallel
-            Parallel.For(0, 240, depthArrayRowIndex =>
+            Parallel.For(0, height, depthArrayRowIndex =>
             {
                 // Process each pixel in the row
-                for (int depthArrayColumnIndex = 0; depthArrayColumnIndex < 320; depthArrayColumnIndex++)
+                for (int depthArrayColumnIndex = 0; depthArrayColumnIndex < width; depthArrayColumnIndex++)
                 {
-                    var depthIndex = depthArrayColumnIndex + (depthArrayRowIndex * 320);
+                    var depthIndex = depthArrayColumnIndex + (depthArrayRowIndex * width);
 
                     // We are only concerned with eliminating 'white' noise from the data.
                     // We consider any pixel with a depth of 0 as a possible candidate for filtering.
@@ -149,13 +146,14 @@ namespace KinectServer.Kinect
                     {
                         // From the depth index, we can determine the X and Y coordinates that the index
                         // will appear in the image.  We use this to help us define our filter matrix.
-                        int x = depthIndex % 320;
-                        int y = (depthIndex - x) / 320;
+                        int x = depthIndex % width;
+                        int y = (depthIndex - x) / width;
 
                         // The filter collection is used to count the frequency of each
                         // depth value in the filter array.  This is used later to determine
                         // the statistical mode for possible assignment to the candidate.
-                        short[,] filterCollection = new short[24, 2];
+                        Dictionary<short, short> filterCollection = new Dictionary<short, short>();
+                        //short[,] filterCollection = new short[24, 2];
 
                         // The inner and outer band counts are used later to compare against the threshold 
                         // values set in the UI to identify a positive filter result.
@@ -196,22 +194,14 @@ namespace KinectServer.Kinect
                                             // We want to find count the frequency of each depth
                                             for (int i = 0; i < 24; i++)
                                             {
-                                                if (filterCollection[i, 0] == depthArray[index])
+                                                short depth = depthArray[index];
+                                                if (!filterCollection.ContainsKey(depth))
                                                 {
-                                                    // When the depth is already in the filter collection
-                                                    // we will just increment the frequency.
-                                                    filterCollection[i, 1]++;
-                                                    break;
+                                                    // Cuando no existe esta profundidad, la creamos e inicializamos su frecuencia
+                                                    filterCollection.Add(depth, 0);
                                                 }
-                                                else if (filterCollection[i, 0] == 0)
-                                                {
-                                                    // When we encounter a 0 depth in the filter collection
-                                                    // this means we have reached the end of values already counted.
-                                                    // We will then add the new depth and start it's frequency at 1.
-                                                    filterCollection[i, 0] = depthArray[index];
-                                                    filterCollection[i, 1]++;
-                                                    break;
-                                                }
+                                                //incrementamos la frecuencia esta medicion
+                                                filterCollection[depth]++;
                                             }
 
                                             // We will then determine which band the non-0 pixel
@@ -236,17 +226,12 @@ namespace KinectServer.Kinect
                             // This loop will determine the statistical mode
                             // of the surrounding pixels for assignment to
                             // the candidate.
-                            for (int i = 0; i < 24; i++)
+                            foreach (short key in filterCollection.Keys)
                             {
-                                // This means we have reached the end of our
-                                // frequency distribution and can break out of the
-                                // loop to save time.
-                                if (filterCollection[i, 0] == 0)
-                                    break;
-                                if (filterCollection[i, 1] > frequency)
+                                if (filterCollection[key] > frequency)
                                 {
-                                    depth = filterCollection[i, 0];
-                                    frequency = filterCollection[i, 1];
+                                    frequency = filterCollection[key];
+                                    depth = key;
                                 }
                             }
 
