@@ -191,18 +191,14 @@ namespace KinectServer.Kinect
                                         // We only want to look for non-0 values
                                         if (depthArray[index] != 0)
                                         {
-                                            // We want to find count the frequency of each depth
-                                            for (int i = 0; i < 24; i++)
+                                            short depth = depthArray[index];
+                                            if (!filterCollection.ContainsKey(depth))
                                             {
-                                                short depth = depthArray[index];
-                                                if (!filterCollection.ContainsKey(depth))
-                                                {
-                                                    // Cuando no existe esta profundidad, la creamos e inicializamos su frecuencia
-                                                    filterCollection.Add(depth, 0);
-                                                }
-                                                //incrementamos la frecuencia esta medicion
-                                                filterCollection[depth]++;
+                                                // Cuando no existe esta profundidad, la creamos e inicializamos su frecuencia
+                                                filterCollection.Add(depth, 0);
                                             }
+                                            //incrementamos la frecuencia esta medicion
+                                            filterCollection[depth]++;
 
                                             // We will then determine which band the non-0 pixel
                                             // was found in, and increment the band counters.
