@@ -11,7 +11,7 @@ namespace KinectServer.Kinect
     {
         // Will specify how many non-zero pixels within a 1 pixel band
         // around the origin there should be before a filter is applied
-        private int foundValuesThreshold;
+        //private int foundValuesThreshold;
 
         // Will specify how many frames to hold in the Queue for averaging
         private int averageFrameCount;
@@ -22,9 +22,9 @@ namespace KinectServer.Kinect
         private bool enableFilter = false;
         private bool enableAverage = false;
 
-        public DepthFixer(bool enableFilter, bool enableAverage, int foundValuesThreshold, int averageFrameCount)
+        public DepthFixer(bool enableFilter, bool enableAverage, int averageFrameCount)
         {
-            this.foundValuesThreshold = foundValuesThreshold;
+            //this.foundValuesThreshold = foundValuesThreshold;
             this.averageFrameCount = averageFrameCount;
 
             this.enableFilter = enableFilter;
@@ -121,7 +121,7 @@ namespace KinectServer.Kinect
             public int X;
             public int Y;
         }
-        /*
+        
         private List<BandCoordinate> GetBandCoordinates(int x, int y, int radius, bool includeInner = false)
         {
             List<BandCoordinate> coords = new List<BandCoordinate>();
@@ -162,7 +162,7 @@ namespace KinectServer.Kinect
             }
 
             return coords;
-        }*/
+        }
 
         private short[] CreateFilteredDepthArray(short[] depthArray, int width, int height)
         {
@@ -178,99 +178,65 @@ namespace KinectServer.Kinect
 
             // We process each row
 
-            Parallel.For(0, height, depthArrayRowIndex =>
-            //for (int depthArrayRowIndex = 0; depthArrayRowIndex < height; depthArrayRowIndex++)
+            int iLeft = 0;
+            int iRight = depthArray.Length - 1;
+            bool looking = true;
+
+
+            //TODO hay que hacer la busqueda por bloques, porque lo de la izquierda se me esta saliendo por la derecha (hay que paralelizar las filas)
+
+            //TODO deberia buscarse tambien en altura, y quiza incluso encontrar la moda por matrices alrededor
+
+            for (int index = 0; index < depthArray.Length; index++)
             {
-
-                // Process each pixel in the row
-                for (int depthArrayColumnIndex = 0; depthArrayColumnIndex < width; depthArrayColumnIndex++)
+                if (depthArray[index] != 0)
                 {
-                    var depthIndex = depthArrayColumnIndex + (depthArrayRowIndex * width);
-
-                    // We are only concerned with eliminating 'white' noise from the data.
-                    // We consider any pixel with a depth of 0 as a possible candidate for filtering.
-                    if (depthArray[depthIndex] == 0)
-                    {
-                        // From the depth index, we can determine the X and Y coordinates that the index
-                        // will appear in the image.  We use this to help us define our filter matrix.
-                        int x = depthIndex % width;
-                        int y = (depthIndex - x) / width;
-
-                        // The filter collection is used to count the frequency of each
-                        // depth value in the filter array.  This is used later to determine
-                        // the statistical mode for possible assignment to the candidate.
-                        Dictionary<short, short> filterCollection = new Dictionary<short, short>();
-                        //short[,] filterCollection = new short[24, 2];
-
-                        // Ampliaremos la matriz de busqueda hasta encontrar suficientes muestras
-                        int foundValues = 0;
-
-                        //vamos buscando las mediciones alrededor del punto "negro" hasta encontrar suficientes muestras
-                        List<BandCoordinate> surroundingMatrix = new List<BandCoordinate>();
-                        bool mustContinue = true;
-                        int matrixRadius = 1;
-                        int searchIncrement = 0;
-                        int maxRadius = width > height ? width : height;
-                        do
-                        {
-                            matrixRadius += 1; //incrementamos el radio de busqueda en esta iteracion
-                            searchIncrement++;
-
-                            //Obtenemos las esquinas matriz que rodea al pixel seleccionado con el radio adecuado para esta iteracion
-                            BandCoordinate TopLeft = new BandCoordinate() {
-                                X = x - matrixRadius < 0 ? 0 : x - matrixRadius,
-                                Y = y - matrixRadius < 0 ? 0 : y - matrixRadius
-                            };
-                            BandCoordinate BottomRight = new BandCoordinate() {
-                                X = x + matrixRadius > widthBound ? widthBound : x + matrixRadius,
-                                Y = y + matrixRadius > heightBound ? heightBound : y + matrixRadius
-                            };
-
-                            //añadimos a la coleccion estadistica los pixeles candidatos que vayamos encontrando en las bandas alrededor del punto
-                            //añadimos los bordes superior e inferior
-                            for (int xi = TopLeft.X; xi <= BottomRight.X; xi++)
-                            {
-                                if (foundValues >= foundValuesThreshold) break; //si en algun momento hemos encontrado un valor valido, terminamos
-                                foundValues += FindNonZeroDepths(depthArray, width, height, filterCollection, new BandCoordinate() { X = xi, Y = TopLeft.Y });
-                                foundValues += FindNonZeroDepths(depthArray, width, height, filterCollection, new BandCoordinate() { X = xi, Y = BottomRight.Y });
-                            }
-
-                            //añadimos los bordes izquierdo y derecho evitando los extremos (que ya hemos añadido anteriormente)
-                            for (int yi = TopLeft.Y + 1; yi < BottomRight.Y; yi++)
-                            {
-                                if (foundValues >= foundValuesThreshold) break; //si en algun momento hemos encontrado un valor valido, terminamos
-                                foundValues += FindNonZeroDepths(depthArray, width, height, filterCollection, new BandCoordinate() { X = TopLeft.X, Y = yi });
-                                foundValues += FindNonZeroDepths(depthArray, width, height, filterCollection, new BandCoordinate() { X = BottomRight.X, Y = yi });
-                            }
-
-                            mustContinue = foundValues < foundValuesThreshold && matrixRadius < maxRadius; //hemos encontrado suficientes muestras o hemos excedido los limites de busqueda
-                        } while (mustContinue);
-
-                        // Calculamos la moda, que sera nuestro candidato para rellenar este pixel
-                        short frequency = 0;
-                        short depth = 0;
-                        // This loop will determine the statistical mode
-                        // of the surrounding pixels for assignment to
-                        // the candidate.
-                        foreach (short key in filterCollection.Keys)
-                        {
-                            if (filterCollection[key] > frequency)
-                            {
-                                frequency = filterCollection[key];
-                                depth = key;
-                            }
-                        }
-
-                        smoothDepthArray[depthIndex] = depth;
+                    //mantenemos el valor original
+                    smoothDepthArray[index] = depthArray[index];
+                
+                    //si no estamos buscando, es porque el pixel anterior no estaba vacio, tenemos un valor por la izquierda
+                    if (!looking) {
+                        iLeft = index;
                     }
                     else
                     {
-                        // If the pixel is not zero, we will keep the original depth.
-                        smoothDepthArray[depthIndex] = depthArray[depthIndex];
+                        //si estamos buscando, es que el pixel anterior estaba vacio, buscamos el valor por la derecha
+                        iRight = index;
+                        looking = false; //ya hemos terminado esta busqueda local
+
+                        //como tenemos valor por ambos extremos, establecemos a ese valor todos los pixeles intermedios
+                        //aqui seria mejor hacerlo tambien en altura y coger la moda del cuadrado
+
+                        //vemos cual es el mas cercano de los dos lados
+                        int replacingDepthIndex = iLeft;
+                        if (iRight - index < index - iLeft) replacingDepthIndex = iRight;
+                        for (int j = iLeft + 1; j < iRight; j++)
+                        {
+                            smoothDepthArray[j] = depthArray[replacingDepthIndex];
+                        }
                     }
                 }
-            });
+                else
+                {
+                    //si la profundidad era cero, iniciamos la busqueda
+                    looking = true;
+                }
+            }
 
+            //al terminar comprobamos que no se ha quedado abierto por la derecha
+            if (looking)
+            {
+                for (int j = iLeft + 1; j < width; j++)
+                {
+                    depthArray[j] = depthArray[iLeft];
+                }
+            }
+            
+
+            //Parallel.For(0, height, depthArrayRowIndex =>
+            //for (int depthArrayRowIndex = 0; depthArrayRowIndex < height; depthArrayRowIndex++)
+            
+            
             return smoothDepthArray;
         }
 

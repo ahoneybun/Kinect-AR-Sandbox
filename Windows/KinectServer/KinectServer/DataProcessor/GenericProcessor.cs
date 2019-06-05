@@ -62,7 +62,7 @@ namespace KinectServer.DataProcessor
             }*/
 
 
-            char[] depthsChar = kinectData.DepthArray.Select(pixel => Convert.ToChar(pixel)).ToArray();//kinectData.DepthArray.Select(pixel => pixel > max ? Convert.ToChar(max) : (pixel < min ? Convert.ToChar(min) : Convert.ToChar(pixel))).ToArray();
+            char[] depthsChar = kinectData.DepthArray.Select(pixel => pixel > max ? Convert.ToChar(max) : (pixel < min ? Convert.ToChar(min) : Convert.ToChar(pixel))).ToArray();
 
 
             //char[] depthsChar = kinectData.DepthArray.Select(pixel => Convert.ToChar(pixel.Depth)).ToArray();
@@ -87,7 +87,7 @@ namespace KinectServer.DataProcessor
             pd.Metadata.Add(KEY_DEPTH_ARRAY, b64);
 
             //TODO esto es innecesario
-            char[] rawdepthsChar = kinectData.RawDepthArray.Select(pixel => Convert.ToChar(pixel)).ToArray();//kinectData.DepthArray.Select(pixel => pixel > max ? Convert.ToChar(max) : (pixel < min ? Convert.ToChar(min) : Convert.ToChar(pixel))).ToArray();
+            char[] rawdepthsChar = kinectData.RawDepthArray.Select(pixel => pixel > max ? Convert.ToChar(max) : Convert.ToChar(pixel)).ToArray();
             string rawdepthsArray = new string(rawdepthsChar);
             string rawb64 = Base64Encode(rawdepthsArray);
             pd.Metadata.Add(KEY_DEPTH_RAW_ARRAY, rawb64);
