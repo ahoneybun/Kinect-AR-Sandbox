@@ -121,7 +121,7 @@ namespace KinectServer.Kinect
             public int X;
             public int Y;
         }
-
+        /*
         private List<BandCoordinate> GetBandCoordinates(int x, int y, int radius, bool includeInner = false)
         {
             List<BandCoordinate> coords = new List<BandCoordinate>();
@@ -162,7 +162,7 @@ namespace KinectServer.Kinect
             }
 
             return coords;
-        }
+        }*/
 
         private short[] CreateFilteredDepthArray(short[] depthArray, int width, int height)
         {
@@ -176,9 +176,12 @@ namespace KinectServer.Kinect
             int widthBound = width - 1;
             int heightBound = height - 1;
 
-            // We process each row in parallel
+            // We process each row
+
             Parallel.For(0, height, depthArrayRowIndex =>
+            //for (int depthArrayRowIndex = 0; depthArrayRowIndex < height; depthArrayRowIndex++)
             {
+
                 // Process each pixel in the row
                 for (int depthArrayColumnIndex = 0; depthArrayColumnIndex < width; depthArrayColumnIndex++)
                 {
@@ -204,39 +207,44 @@ namespace KinectServer.Kinect
 
                         //vamos buscando las mediciones alrededor del punto "negro" hasta encontrar suficientes muestras
                         List<BandCoordinate> surroundingMatrix = new List<BandCoordinate>();
-                        bool mustSearchInGreaterRange = true;
-                        int matrixRadius = 2;
+                        bool mustContinue = true;
+                        int matrixRadius = 1;
+                        int searchIncrement = 0;
                         int maxRadius = width > height ? width : height;
                         do
                         {
-                            //Obtenemos la matriz que rodea al pixel seleccionado
-                            surroundingMatrix = surroundingMatrix.Concat(GetBandCoordinates(x, y, matrixRadius, matrixRadius == 2)).ToList<BandCoordinate>(); //la primera vez buscamos en una matrix que incluye los valores interiores para ahorrar iteraciones
-                            matrixRadius++;
+                            matrixRadius += 1; //incrementamos el radio de busqueda en esta iteracion
+                            searchIncrement++;
 
-                            foreach (BandCoordinate coord in surroundingMatrix)
+                            //Obtenemos las esquinas matriz que rodea al pixel seleccionado con el radio adecuado para esta iteracion
+                            BandCoordinate TopLeft = new BandCoordinate() {
+                                X = x - matrixRadius < 0 ? 0 : x - matrixRadius,
+                                Y = y - matrixRadius < 0 ? 0 : y - matrixRadius
+                            };
+                            BandCoordinate BottomRight = new BandCoordinate() {
+                                X = x + matrixRadius > widthBound ? widthBound : x + matrixRadius,
+                                Y = y + matrixRadius > heightBound ? heightBound : y + matrixRadius
+                            };
+
+                            //añadimos a la coleccion estadistica los pixeles candidatos que vayamos encontrando en las bandas alrededor del punto
+                            //añadimos los bordes superior e inferior
+                            for (int xi = TopLeft.X; xi <= BottomRight.X; xi++)
                             {
-                                //ignoramos los que esten fuera de los limites de la imagen
-                                if (coord.X >= 0 && coord.X <= widthBound && coord.Y >= 0 && coord.Y <= heightBound)
-                                {
-                                    int index = coord.X + (coord.Y * width);
-                                    // We only want to look for non-0 values
-                                    if (depthArray[index] != 0)
-                                    {
-                                        short evaluatingDepth = depthArray[index];
-                                        if (!filterCollection.ContainsKey(evaluatingDepth))
-                                        {
-                                            // Cuando no existe esta profundidad, la creamos e inicializamos su frecuencia
-                                            filterCollection.Add(evaluatingDepth, 0);
-                                        }
-                                        //incrementamos la frecuencia esta medicion
-                                        filterCollection[evaluatingDepth]++;
-                                        foundValues++;
-                                    }
-                                }
+                                if (foundValues >= foundValuesThreshold) break; //si en algun momento hemos encontrado un valor valido, terminamos
+                                foundValues += FindNonZeroDepths(depthArray, width, height, filterCollection, new BandCoordinate() { X = xi, Y = TopLeft.Y });
+                                foundValues += FindNonZeroDepths(depthArray, width, height, filterCollection, new BandCoordinate() { X = xi, Y = BottomRight.Y });
                             }
 
-                            mustSearchInGreaterRange = foundValues < foundValuesThreshold || matrixRadius >= maxRadius; //hemos encontrado suficientes muestras o hemos excedido los limites de busqueda
-                        } while (mustSearchInGreaterRange);
+                            //añadimos los bordes izquierdo y derecho evitando los extremos (que ya hemos añadido anteriormente)
+                            for (int yi = TopLeft.Y + 1; yi < BottomRight.Y; yi++)
+                            {
+                                if (foundValues >= foundValuesThreshold) break; //si en algun momento hemos encontrado un valor valido, terminamos
+                                foundValues += FindNonZeroDepths(depthArray, width, height, filterCollection, new BandCoordinate() { X = TopLeft.X, Y = yi });
+                                foundValues += FindNonZeroDepths(depthArray, width, height, filterCollection, new BandCoordinate() { X = BottomRight.X, Y = yi });
+                            }
+
+                            mustContinue = foundValues < foundValuesThreshold && matrixRadius < maxRadius; //hemos encontrado suficientes muestras o hemos excedido los limites de busqueda
+                        } while (mustContinue);
 
                         // Calculamos la moda, que sera nuestro candidato para rellenar este pixel
                         short frequency = 0;
@@ -266,5 +274,35 @@ namespace KinectServer.Kinect
             return smoothDepthArray;
         }
 
+        /// <summary>
+        /// Actualiza la lista de filterCollection con la profundidad del cuadro determinado por las coordenadas, si es que es un candidato valido
+        /// Devuelve el numero de valores encontrados
+        /// </summary>
+        /// <returns></returns>
+        private static int FindNonZeroDepths(short[] depthArray, int width, int height, Dictionary<short, short> filterCollection, BandCoordinate coord)
+        {
+            int foundValues = 0;
+
+            //ignoramos los que esten fuera de los limites de la imagen
+            if (coord.X >= 0 && coord.X <= (width - 1) && coord.Y >= 0 && coord.Y <= (height - 1))
+            {
+                int index = coord.X + (coord.Y * width);
+                // We only want to look for non-0 values
+                if (depthArray[index] != 0)
+                {
+                    short evaluatingDepth = depthArray[index];
+                    if (!filterCollection.ContainsKey(evaluatingDepth))
+                    {
+                        // Cuando no existe esta profundidad, la creamos e inicializamos su frecuencia
+                        filterCollection.Add(evaluatingDepth, 0);
+                    }
+                    //incrementamos la frecuencia esta medicion
+                    filterCollection[evaluatingDepth]++;
+                    foundValues++;
+                }
+            }
+
+            return foundValues;
+        }
     }
 }
