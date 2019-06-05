@@ -27,6 +27,7 @@ namespace KinectClient
 {
     class TCPData
     {
+        const string KEY_DEPTH_RAW_ARRAY = "RawDepthArray";
         const string KEY_DEPTH_ARRAY = "DepthArray";
         const string KEY_DEPTH_WIDTH = "DepthWidth";
         const string KEY_DEPTH_HEIGHT = "DepthHeight";
@@ -43,7 +44,7 @@ namespace KinectClient
         public int MIN;
 
 
-        public float[,] GetRelativeDepths(Dictionary<string, string> Metadata)
+        public float[,] GetRelativeDepths(Dictionary<string, string> Metadata, bool getRaw = false)
         {
             W = Convert.ToInt32(Metadata[KEY_DEPTH_WIDTH]);
             H = Convert.ToInt32(Metadata[KEY_DEPTH_HEIGHT]);
@@ -52,7 +53,10 @@ namespace KinectClient
 
             int Range = MAX - MIN;
 
-            string depthsString = Base64Decode(Metadata[KEY_DEPTH_ARRAY]);
+            string depthsString;
+
+            if (getRaw) depthsString = Base64Decode(Metadata[KEY_DEPTH_RAW_ARRAY]);
+            else depthsString = Base64Decode(Metadata[KEY_DEPTH_ARRAY]);
 
             float[,] heights = new float[W, H];
             int x = 0;
@@ -168,9 +172,11 @@ namespace KinectClient
                     {
                         Console.WriteLine("Trying to parse");
                         float[,] depths = data.GetRelativeDepths(data.Metadata);
+                        float[,] rawdepths = data.GetRelativeDepths(data.Metadata, true);
 
                         Console.WriteLine("Trying to present");
                         Bitmap bmp = new Bitmap(data.W, data.H);
+                        Bitmap rawbmp = new Bitmap(data.W, data.H);
 
                         for (int xi = 0; xi < depths.GetLength(0); xi++)
                         {
@@ -180,16 +186,28 @@ namespace KinectClient
                                 Int16 grey = Convert.ToInt16(rel * 255);
                                 System.Drawing.Color nc = System.Drawing.Color.FromArgb(255, grey, grey, grey);
                                 bmp.SetPixel(xi, yi, nc);
+
+                                //raw data
+                                float rawrel = rawdepths[xi, yi];
+                                Int16 rawgrey = Convert.ToInt16(rawrel * 255);
+                                System.Drawing.Color rawnc = System.Drawing.Color.FromArgb(255, rawgrey, rawgrey, rawgrey);
+                                rawbmp.SetPixel(xi, yi, rawnc);
                             }
                         }
 
                         BitmapImage bitmap = ConvertToBitmapImage(bmp);
+                        BitmapImage rawbitmap = ConvertToBitmapImage(rawbmp);
 
 
                         //canvas.Source.Dispatcher.Invoke(() => canvas.Source = bitmap);
                         canvas.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate ()
                         {
                             canvas.Source = bitmap;
+                        });
+
+                        rawcanvas.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate ()
+                        {
+                            rawcanvas.Source = rawbitmap;
                         });
 
 

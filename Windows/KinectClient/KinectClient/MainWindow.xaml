@@ -5,9 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:KinectClient"
         mc:Ignorable="d"
-        Title="MainWindow" Height="350" Width="525">
+        Title="MainWindow" Height="350" Width="1050" ResizeMode="NoResize">
     <Grid>
-        <Image HorizontalAlignment="Left" Height="205" Margin="158,42,0,0" VerticalAlignment="Top" Width="305" Name="canvas"/>
+        <Image HorizontalAlignment="Left" Height="299" Margin="10,10,0,0" VerticalAlignment="Top" Width="497" Name="rawcanvas"/>
+        <Image HorizontalAlignment="Left" Height="299" Margin="537,10,0,0" VerticalAlignment="Top" Width="497" x:Name="canvas"/>
 
     </Grid>
 </Window>

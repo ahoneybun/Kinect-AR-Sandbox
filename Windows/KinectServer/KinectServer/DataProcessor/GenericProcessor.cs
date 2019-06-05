@@ -11,6 +11,7 @@ namespace KinectServer.DataProcessor
 {
     public class GenericProcessor : IDataProcessor
     {
+        public const string KEY_DEPTH_RAW_ARRAY = "RawDepthArray";
         public const string KEY_DEPTH_ARRAY = "DepthArray";
         public const string KEY_DEPTH_WIDTH = "DepthWidth";
         public const string KEY_DEPTH_HEIGHT = "DepthHeight";
@@ -84,6 +85,13 @@ namespace KinectServer.DataProcessor
 
             //lo añadimos a los datos que se enviaran
             pd.Metadata.Add(KEY_DEPTH_ARRAY, b64);
+
+            //TODO esto es innecesario
+            char[] rawdepthsChar = kinectData.RawDepthArray.Select(pixel => Convert.ToChar(pixel)).ToArray();//kinectData.DepthArray.Select(pixel => pixel > max ? Convert.ToChar(max) : (pixel < min ? Convert.ToChar(min) : Convert.ToChar(pixel))).ToArray();
+            string rawdepthsArray = new string(rawdepthsChar);
+            string rawb64 = Base64Encode(rawdepthsArray);
+            pd.Metadata.Add(KEY_DEPTH_RAW_ARRAY, rawb64);
+
 
 
             return pd;
