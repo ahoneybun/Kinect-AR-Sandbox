@@ -18,12 +18,12 @@ let smoothDepthArray =
 let depthArray = 
 [
   1, 1, 2, 3, 4, 5, 6, 7, 8, 9,
- 10, 0,12,13,14,15,16,17,18,19,
- 20,21,22,23,24,25,26,27,28,29,
+ 10, 0, 0, 0,14,15,16,17,18,19,
+ 20,21, 0,23,24,25, 0,27,28,29,
  30,31,32,33,34,35,36,37,38,39,
- 40,41,42,43,44,45,46,47,48,49,
- 50,51,52,53,54,55,56,57,58,59,
- 60,61,62,63,64,65,66,67,68,69,
+ 40,41,42,43,44, 0,46,47,48,49,
+ 50,51,52,53,54,55,56,57,58,59,//poner 0 en el ultimo
+  0,61,62,63,64,65, 0,67,68,69,
  70,71,72,73,74,75,76,77,78,79,
  80,81,82,83,84,85,86,87,88,89
 ];
@@ -77,12 +77,12 @@ while (processedIndexes < depthArray.length) {
 
           //vemos cual es el mas cercano de los dos lados
           //TODO: EN REALIDAD, HABRIA QUE BUSCAR CUANDO HEMOS ACABADO DE ALINEAR VERTICALMENTE
-          let replacingDepthIndex = lArray[row];
+          /*let replacingDepthIndex = lArray[row];
           if (rArray[row] - index < index - lArray[row]) replacingDepthIndex = rArray[row];
           for (let j = lArray[row] + 1; j < rArray[row]; j++)
           {
               smoothDepthArray[j] = depthArray[replacingDepthIndex];
-          }
+          }*/
 
           //habria que actualizar el valor de la izquirda = al de la derecha, despues
       }
@@ -106,10 +106,26 @@ while (processedIndexes < depthArray.length) {
     //si la columna es widthBound, quitamos esta fila, se ha acabado su procesamiento
     if (col == widthBound) nextRows.splice(nextRowPosition, 1);
 
-    //vemos por que indice vamos de la siguiente fila
+    //si estamos en la ultima fila, hemos acabado un alineamiento horizontal de huecos
+    if (row == height - 1) {
+      for (let r = 0; r < height; r++) {
+        let replacingDepthIndex = lArray[r];
+        for (let j = lArray[r] + 1; j < rArray[r]; j++)
+        {
+            smoothDepthArray[j] = depthArray[replacingDepthIndex];
+        }
+      }
+
+    }
+
+
+    //continuamos reasignando el indice por donde vayamos en la fila siguiente
     nextRowPosition = (nextRowPosition + 1) % nextRows.length;
     let nextRow = nextRows[nextRowPosition];
     index = iArray[nextRow];
+
+
+
   } else {
     index = iArray[row];
   }
