@@ -11,10 +11,7 @@ namespace KinectServer.Kinect
     {
         // Will specify how many non-zero pixels within a 1 pixel band
         // around the origin there should be before a filter is applied
-        private int innerBandThreshold;
-        // Will specify how many non-zero pixels within a 2 pixel band
-        // around the origin there should be before a filter is applied
-        private int outerBandThreshold;
+        //private int foundValuesThreshold;
 
         // Will specify how many frames to hold in the Queue for averaging
         private int averageFrameCount;
@@ -25,10 +22,9 @@ namespace KinectServer.Kinect
         private bool enableFilter = false;
         private bool enableAverage = false;
 
-        public DepthFixer(bool enableFilter, bool enableAverage, int innerBandThreshold, int outerBandThreshold, int averageFrameCount)
+        public DepthFixer(bool enableFilter, bool enableAverage, int averageFrameCount)
         {
-            this.innerBandThreshold = innerBandThreshold;
-            this.outerBandThreshold = outerBandThreshold;
+            //this.foundValuesThreshold = foundValuesThreshold;
             this.averageFrameCount = averageFrameCount;
 
             this.enableFilter = enableFilter;
@@ -36,21 +32,21 @@ namespace KinectServer.Kinect
         }
 
 
-        public short[] Fix(DepthImagePixel[] depthArray, int width, int height)
+        public short[] Fix(short[] depth, int width, int height)
         {
-            short[] depth = depthArray.Select(pixel => pixel.Depth).ToArray();
+            short[] depthResult = null;
 
             if (this.enableFilter)
             {
-                depth = CreateFilteredDepthArray(depth, width, height);
+                depthResult = CreateFilteredDepthArray(depth, width, height);
             }
 
             if (this.enableAverage)
             {
-                depth = CreateAverageDepthArray(depth);
+                depthResult = CreateAverageDepthArray(depthResult);
             }
 
-            return depth;
+            return depthResult;
         }
 
 
@@ -125,18 +121,43 @@ namespace KinectServer.Kinect
             public int X;
             public int Y;
         }
-
-        private List<BandCoordinate> GetBandCoordinates(int x, int y, int radius)
+        
+        private List<BandCoordinate> GetBandCoordinates(int x, int y, int radius, bool includeInner = false)
         {
             List<BandCoordinate> coords = new List<BandCoordinate>();
-            BandCoordinate aux;
 
-            for (int yi = -2; yi < 3; yi++)
+            BandCoordinate TopLeft = new BandCoordinate() { X = x - radius, Y = y - radius };
+            BandCoordinate BottomRight = new BandCoordinate() { X = x + radius, Y = y + radius };
+
+            //si queremos incluir tambien los cuadrados interiores
+            if (includeInner)
             {
-                for (int xi = -2; xi < 3; xi++)
+                for (int yi = y - radius; yi <= (y + radius); yi++)
                 {
-                    aux = new BandCoordinate() { X = x + xi, Y = y + yi };
-                    coords.Add(aux);                    
+                    for (int xi = x - radius; xi <= (x + radius); xi++)
+                    {
+                        if (!(xi == x && yi == y)) //ignoramos el centro siempre
+                        {
+                            coords.Add(new BandCoordinate() { X = xi, Y = yi });
+                        }
+                    }
+                }
+            } else
+            {
+                //si solo queremos el borde conforme al radio que hemos definido
+
+                //añadimos los bordes superior e inferior
+                for (int xi = TopLeft.X; xi <= BottomRight.X; xi++)
+                {
+                    coords.Add(new BandCoordinate() { X = xi, Y = TopLeft.Y });
+                    coords.Add(new BandCoordinate() { X = xi, Y = BottomRight.Y });
+                }
+
+                //añadimos los bordes izquierdo y derecho evitando los extremos (que ya hemos añadido anteriormente)
+                for (int yi = TopLeft.Y + 1; yi < BottomRight.Y; yi++)
+                {
+                    coords.Add(new BandCoordinate() { X = TopLeft.X, Y = yi });
+                    coords.Add(new BandCoordinate() { X = BottomRight.X, Y = yi });
                 }
             }
 
@@ -155,119 +176,99 @@ namespace KinectServer.Kinect
             int widthBound = width - 1;
             int heightBound = height - 1;
 
-            // We process each row in parallel
-            Parallel.For(0, height, depthArrayRowIndex =>
+            // We process each row
+
+            int iLeft = 0;
+            int iRight = depthArray.Length - 1;
+            bool looking = true;
+
+
+            //TODO hay que hacer la busqueda por bloques, porque lo de la izquierda se me esta saliendo por la derecha (hay que paralelizar las filas)
+
+            //TODO deberia buscarse tambien en altura, y quiza incluso encontrar la moda por matrices alrededor
+
+            for (int index = 0; index < depthArray.Length; index++)
             {
-                // Process each pixel in the row
-                for (int depthArrayColumnIndex = 0; depthArrayColumnIndex < width; depthArrayColumnIndex++)
+                if (depthArray[index] != 0)
                 {
-                    var depthIndex = depthArrayColumnIndex + (depthArrayRowIndex * width);
-
-                    // We are only concerned with eliminating 'white' noise from the data.
-                    // We consider any pixel with a depth of 0 as a possible candidate for filtering.
-                    if (depthArray[depthIndex] == 0)
-                    {
-                        // From the depth index, we can determine the X and Y coordinates that the index
-                        // will appear in the image.  We use this to help us define our filter matrix.
-                        int x = depthIndex % width;
-                        int y = (depthIndex - x) / width;
-
-                        // The filter collection is used to count the frequency of each
-                        // depth value in the filter array.  This is used later to determine
-                        // the statistical mode for possible assignment to the candidate.
-                        Dictionary<short, short> filterCollection = new Dictionary<short, short>();
-                        //short[,] filterCollection = new short[24, 2];
-
-                        // The inner and outer band counts are used later to compare against the threshold 
-                        // values set in the UI to identify a positive filter result.
-                        int innerBandCount = 0;
-                        int outerBandCount = 0;
-
-                        // The following loops will loop through a 5 X 5 matrix of pixels surrounding the 
-                        // candidate pixel.  This defines 2 distinct 'bands' around the candidate pixel.
-                        // If any of the pixels in this matrix are non-0, we will accumulate them and count
-                        // how many non-0 pixels are in each band.  If the number of non-0 pixels breaks the
-                        // threshold in either band, then the average of all non-0 pixels in the matrix is applied
-                        // to the candidate pixel.
-                        for (int yi = -2; yi < 3; yi++)
-                        {
-                            for (int xi = -2; xi < 3; xi++)
-                            {
-                                // yi and xi are modifiers that will be subtracted from and added to the
-                                // candidate pixel's x and y coordinates that we calculated earlier.  From the
-                                // resulting coordinates, we can calculate the index to be addressed for processing.
-
-                                // We do not want to consider the candidate pixel (xi = 0, yi = 0) in our process at this point.
-                                // We already know that it's 0
-                                if (xi != 0 || yi != 0)
-                                {
-                                    // We then create our modified coordinates for each pass
-                                    var xSearch = x + xi;
-                                    var ySearch = y + yi;
-
-                                    // While the modified coordinates may in fact calculate out to an actual index, it 
-                                    // might not be the one we want.  Be sure to check to make sure that the modified coordinates
-                                    // match up with our image bounds.
-                                    if (xSearch >= 0 && xSearch <= widthBound && ySearch >= 0 && ySearch <= heightBound)
-                                    {
-                                        var index = xSearch + (ySearch * width);
-                                        // We only want to look for non-0 values
-                                        if (depthArray[index] != 0)
-                                        {
-                                            short depth = depthArray[index];
-                                            if (!filterCollection.ContainsKey(depth))
-                                            {
-                                                // Cuando no existe esta profundidad, la creamos e inicializamos su frecuencia
-                                                filterCollection.Add(depth, 0);
-                                            }
-                                            //incrementamos la frecuencia esta medicion
-                                            filterCollection[depth]++;
-
-                                            // We will then determine which band the non-0 pixel
-                                            // was found in, and increment the band counters.
-                                            if (yi != 2 && yi != -2 && xi != 2 && xi != -2)
-                                                innerBandCount++;
-                                            else
-                                                outerBandCount++;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // Once we have determined our inner and outer band non-zero counts, and accumulated all of those values,
-                        // we can compare it against the threshold to determine if our candidate pixel will be changed to the
-                        // statistical mode of the non-zero surrounding pixels.
-                        if (innerBandCount >= innerBandThreshold || outerBandCount >= outerBandThreshold)
-                        {
-                            short frequency = 0;
-                            short depth = 0;
-                            // This loop will determine the statistical mode
-                            // of the surrounding pixels for assignment to
-                            // the candidate.
-                            foreach (short key in filterCollection.Keys)
-                            {
-                                if (filterCollection[key] > frequency)
-                                {
-                                    frequency = filterCollection[key];
-                                    depth = key;
-                                }
-                            }
-
-                            smoothDepthArray[depthIndex] = depth;
-                        }
-
+                    //mantenemos el valor original
+                    smoothDepthArray[index] = depthArray[index];
+                
+                    //si no estamos buscando, es porque el pixel anterior no estaba vacio, tenemos un valor por la izquierda
+                    if (!looking) {
+                        iLeft = index;
                     }
                     else
                     {
-                        // If the pixel is not zero, we will keep the original depth.
-                        smoothDepthArray[depthIndex] = depthArray[depthIndex];
+                        //si estamos buscando, es que el pixel anterior estaba vacio, buscamos el valor por la derecha
+                        iRight = index;
+                        looking = false; //ya hemos terminado esta busqueda local
+
+                        //como tenemos valor por ambos extremos, establecemos a ese valor todos los pixeles intermedios
+                        //aqui seria mejor hacerlo tambien en altura y coger la moda del cuadrado
+
+                        //vemos cual es el mas cercano de los dos lados
+                        int replacingDepthIndex = iLeft;
+                        if (iRight - index < index - iLeft) replacingDepthIndex = iRight;
+                        for (int j = iLeft + 1; j < iRight; j++)
+                        {
+                            smoothDepthArray[j] = depthArray[replacingDepthIndex];
+                        }
                     }
                 }
-            });
+                else
+                {
+                    //si la profundidad era cero, iniciamos la busqueda
+                    looking = true;
+                }
+            }
 
+            //al terminar comprobamos que no se ha quedado abierto por la derecha
+            if (looking)
+            {
+                for (int j = iLeft + 1; j < width; j++)
+                {
+                    depthArray[j] = depthArray[iLeft];
+                }
+            }
+            
+
+            //Parallel.For(0, height, depthArrayRowIndex =>
+            //for (int depthArrayRowIndex = 0; depthArrayRowIndex < height; depthArrayRowIndex++)
+            
+            
             return smoothDepthArray;
         }
 
+        /// <summary>
+        /// Actualiza la lista de filterCollection con la profundidad del cuadro determinado por las coordenadas, si es que es un candidato valido
+        /// Devuelve el numero de valores encontrados
+        /// </summary>
+        /// <returns></returns>
+        private static int FindNonZeroDepths(short[] depthArray, int width, int height, Dictionary<short, short> filterCollection, BandCoordinate coord)
+        {
+            int foundValues = 0;
+
+            //ignoramos los que esten fuera de los limites de la imagen
+            if (coord.X >= 0 && coord.X <= (width - 1) && coord.Y >= 0 && coord.Y <= (height - 1))
+            {
+                int index = coord.X + (coord.Y * width);
+                // We only want to look for non-0 values
+                if (depthArray[index] != 0)
+                {
+                    short evaluatingDepth = depthArray[index];
+                    if (!filterCollection.ContainsKey(evaluatingDepth))
+                    {
+                        // Cuando no existe esta profundidad, la creamos e inicializamos su frecuencia
+                        filterCollection.Add(evaluatingDepth, 0);
+                    }
+                    //incrementamos la frecuencia esta medicion
+                    filterCollection[evaluatingDepth]++;
+                    foundValues++;
+                }
+            }
+
+            return foundValues;
+        }
     }
 }

@@ -2,6 +2,7 @@
 using System.IO;
 using Microsoft.Kinect;
 
+using System.Linq;
 namespace KinectServer.Kinect
 {
     public class KinectController
@@ -38,7 +39,7 @@ namespace KinectServer.Kinect
         /// </summary>
         public void StartSensor()
         {
-            DepthFixer = new DepthFixer(true, true, false, 10, 16, 20);
+            DepthFixer = new DepthFixer(true, false, 4);
 
 
             // Look through all sensors and start the first connected one.
@@ -114,9 +115,10 @@ namespace KinectServer.Kinect
 
                     Console.WriteLine("Depth " + MinDepthRange + "/" + MaxDepthRange + " -> " + this.depthPixels[300].Depth);
 
-                    //short[] depthArray = this.depthPixels.Select(pixel => pixel.Depth).ToArray();
-                    short[] depthArray = DepthFixer.Fix(this.depthPixels, Width, Height);
-                    KinectData kd = new KinectData(depthArray, Width, Height, MinDepthRange, MaxDepthRange);
+
+                    short[] depth = this.depthPixels.Select(pixel => pixel.Depth).ToArray();
+                    short[] depthFixed = DepthFixer.Fix(depth, Width, Height);
+                    KinectData kd = new KinectData(depth, depthFixed, Width, Height, MinDepthRange, MaxDepthRange);
 
                     //sender matrix
 
