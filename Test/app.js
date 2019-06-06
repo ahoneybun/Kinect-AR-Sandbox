@@ -42,9 +42,9 @@ let nextRows = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 
 //inicializacion
 for(let h = 0; h < height; h++) {
-  lArray[h] = 0;
-  rArray[h] = widthBound;
-  iArray[h] = 0;
+  lArray[h] = 0 + h * width;
+  rArray[h] = widthBound + h * width;
+  iArray[h] = 0 + h * width;
   sArray[h] = true; //todos los huecos se estan buscando
 }
 
@@ -69,7 +69,7 @@ while (processedIndexes < depthArray.length) {
       else
       {
           //si estamos buscando, es que el pixel anterior estaba vacio, buscamos el valor por la derecha
-          rArray[row] = col;
+          rArray[row] = index;
           sArray[row] = false; //ya hemos terminado esta busqueda local
 
           //como tenemos valor por ambos extremos, establecemos a ese valor todos los pixeles intermedios
@@ -79,10 +79,12 @@ while (processedIndexes < depthArray.length) {
           //TODO: EN REALIDAD, HABRIA QUE BUSCAR CUANDO HEMOS ACABADO DE ALINEAR VERTICALMENTE
           let replacingDepthIndex = lArray[row];
           if (rArray[row] - index < index - lArray[row]) replacingDepthIndex = rArray[row];
-          for (let j = lArray[row]; j <= rArray[row]; j++)
+          for (let j = lArray[row] + 1; j < rArray[row]; j++)
           {
-              smoothDepthArray[j + row * width] = depthArray[replacingDepthIndex + row * width];
+              smoothDepthArray[j] = depthArray[replacingDepthIndex];
           }
+
+          //habria que actualizar el valor de la izquirda = al de la derecha, despues
       }
   }
   else
@@ -107,9 +109,9 @@ while (processedIndexes < depthArray.length) {
     //vemos por que indice vamos de la siguiente fila
     nextRowPosition = (nextRowPosition + 1) % nextRows.length;
     let nextRow = nextRows[nextRowPosition];
-    index = iArray[nextRow] + nextRow * width;
+    index = iArray[nextRow];
   } else {
-    index = iArray[row] + row * width;
+    index = iArray[row];
   }
 } 
 
