@@ -18,17 +18,19 @@ namespace KinectServer.Kinect
 
         // The actual Queue that will hold all of the frames to be averaged
         private Queue<short[]> averageQueue = new Queue<short[]>();
+        private short[] correctionLayer = null;
 
         private bool enableFilter = false;
         private bool enableAverage = false;
+        private bool enableHistoricalHolesFilter = false;
 
         private int FilterMaxSearchDistance = 10;
 
-        public DepthFixer(bool enableFilter, bool enableAverage, int averageFrameCount)
+        public DepthFixer(bool enableFilter, bool enableAverage, bool enableHistoricalHolesFilter, int averageFrameCount)
         {
             //this.foundValuesThreshold = foundValuesThreshold;
             this.averageFrameCount = averageFrameCount;
-
+            this.enableHistoricalHolesFilter = enableHistoricalHolesFilter;
             this.enableFilter = enableFilter;
             this.enableAverage = enableAverage;
         }
@@ -38,18 +40,66 @@ namespace KinectServer.Kinect
         {
             short[] depthResult = null;
 
+            if (correctionLayer == null) correctionLayer = depth;
+
+            if (this.enableHistoricalHolesFilter) {
+                depthResult = ReplaceHolesWithHistorical(depth, correctionLayer);
+            }
 
             if (this.enableFilter)
             {
-                depthResult = CreateFilteredDepthArray(depth, width, height);
+                depthResult = CreateFilteredDepthArray(depthResult, width, height);
             }
 
             if (this.enableAverage)
             {
                 depthResult = CreateAverageDepthArray(depthResult);
             }
+
+            //guardamos el ultimo array como capa de correccion
+            correctionLayer = depthResult;
+
             return depthResult;
         }
+
+
+        private short[] ReplaceHolesWithHistorical(short[] depthArray, short[] correctionLayer)
+        {
+            // This is a method of Weighted Moving Average per pixel coordinate across several frames of depth data.
+            // This means that newer frames are linearly weighted heavier than older frames to reduce motion tails,
+            // while still having the effect of reducing noise flickering.
+
+            short[] averagedDepthArray = new short[depthArray.Length];
+
+            //averageQueue.Enqueue(depthArray);
+            //CheckForDequeue(1);
+            
+            for (int index = 0; index < depthArray.Length; index++)
+            {
+                if (depthArray[index] == 0)
+                    averagedDepthArray[index] = correctionLayer[index];
+                else
+                    averagedDepthArray[index] = depthArray[index];
+            }
+
+            // Process each row in parallel
+            /*
+            Parallel.For(0, 240, depthArrayRowIndex =>
+            {
+                // Process each pixel in the row
+                for (int depthArrayColumnIndex = 0; depthArrayColumnIndex < 320; depthArrayColumnIndex++)
+                {
+                    var index = depthArrayColumnIndex + (depthArrayRowIndex * 320);
+                    if (depthArray[index] == 0)
+                        averagedDepthArray[index] = (short)(sumDepthArray[index] / Denominator);
+                    else
+                        averagedDepthArray[index] = depthArray[index];
+                }
+            });*/
+
+            return averagedDepthArray;
+        }
+
 
 
         private short[] CreateAverageDepthArray(short[] depthArray)
@@ -106,12 +156,13 @@ namespace KinectServer.Kinect
             return averagedDepthArray;
         }
 
-        private void CheckForDequeue()
+        private void CheckForDequeue(int count = -1)
         {
+            int c = count <= 0 ? averageFrameCount : count;
             // We will recursively check to make sure we have Dequeued enough frames.
             // This is due to the fact that a user could constantly be changing the UI element
             // that specifies how many frames to use for averaging.
-            if (averageQueue.Count > averageFrameCount)
+            if (averageQueue.Count > count)
             {
                 averageQueue.Dequeue();
                 CheckForDequeue();

@@ -39,7 +39,7 @@ namespace KinectServer.Kinect
         /// </summary>
         public void StartSensor()
         {
-            DepthFixer = new DepthFixer(true, true, 1);
+            DepthFixer = new DepthFixer(true, false, true, 4);
 
 
             // Look through all sensors and start the first connected one.
