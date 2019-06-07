@@ -38,6 +38,7 @@ namespace KinectServer.Kinect
         {
             short[] depthResult = null;
 
+
             if (this.enableFilter)
             {
                 depthResult = CreateFilteredDepthArray(depth, width, height);
@@ -47,7 +48,6 @@ namespace KinectServer.Kinect
             {
                 depthResult = CreateAverageDepthArray(depthResult);
             }
-
             return depthResult;
         }
 
