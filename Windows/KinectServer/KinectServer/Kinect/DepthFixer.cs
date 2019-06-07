@@ -121,7 +121,7 @@ namespace KinectServer.Kinect
             public int X;
             public int Y;
         }
-        
+        /*
         private List<BandCoordinate> GetBandCoordinates(int x, int y, int radius, bool includeInner = false)
         {
             List<BandCoordinate> coords = new List<BandCoordinate>();
@@ -163,7 +163,7 @@ namespace KinectServer.Kinect
 
             return coords;
         }
-
+        */
         private short[] CreateFilteredDepthArray(short[] depthArray, int width, int height)
         {
             /////////////////////////////////////////////////////////////////////////////////////
@@ -175,68 +175,138 @@ namespace KinectServer.Kinect
             // We will be using these numbers for constraints on indexes
             int widthBound = width - 1;
             int heightBound = height - 1;
-
+            int MAX_MODE_SEARCH_DISTANCE = 10;
             // We process each row
 
-            int iLeft = 0;
-            int iRight = depthArray.Length - 1;
-            bool looking = true;
 
 
             //TODO hay que hacer la busqueda por bloques, porque lo de la izquierda se me esta saliendo por la derecha (hay que paralelizar las filas)
 
             //TODO deberia buscarse tambien en altura, y quiza incluso encontrar la moda por matrices alrededor
-
-            for (int index = 0; index < depthArray.Length; index++)
+            Parallel.For(0, height, y =>
+            //for (int index = 0; index < depthArray.Length; index++)
             {
-                if (depthArray[index] != 0)
+
+                int iLeft = 0;
+                int iRight = widthBound;
+                bool looking = true;
+
+                for (int x = 0; x <= widthBound; x++)
                 {
-                    //mantenemos el valor original
-                    smoothDepthArray[index] = depthArray[index];
-                
-                    //si no estamos buscando, es porque el pixel anterior no estaba vacio, tenemos un valor por la izquierda
-                    if (!looking) {
-                        iLeft = index;
+                    int index = y * width + x;
+
+                    if (depthArray[index] != 0)
+                    {
+                        //mantenemos el valor original
+                        smoothDepthArray[index] = depthArray[index];
+
+                        //si no estamos buscando, es porque el pixel anterior no estaba vacio, tenemos un valor por la izquierda
+                        if (!looking)
+                        {
+                            iLeft = x;
+                        }
+                        else
+                        {
+                            //si estamos buscando, es que el pixel anterior estaba vacio, buscamos el valor por la derecha
+                            iRight = x;
+                            looking = false; //ya hemos terminado esta busqueda local
+
+                            //como tenemos valor por ambos extremos, establecemos a ese valor todos los pixeles intermedios
+                            //aqui seria mejor hacerlo tambien en altura y coger la moda del cuadrado
+
+                            //vemos cual es el mas cercano de los dos lados
+                            /*int replacingDepthIndex = iLeft;
+                            if (iRight - x < x - iLeft) replacingDepthIndex = iRight;
+                            for (int j = iLeft + 1; j < iRight; j++)
+                            {
+                                smoothDepthArray[j + y * width] = depthArray[replacingDepthIndex];
+                            }*/
+
+
+                            //sustituimos cada hueco encontrado
+                            for (int slotX = iLeft + 1; slotX < iRight; slotX++)
+                            {
+                                int jIndex = slotX + y * width;
+                                int distance = iRight - slotX;
+                                bool fromRight = true;
+                                if (slotX - iLeft < distance)
+                                {
+                                    fromRight = false;
+                                    distance = slotX - iLeft;
+                                }
+
+                                if (distance > MAX_MODE_SEARCH_DISTANCE) //BUSQUEDA RAPIDA
+                                {
+                                    //buscar en vertical?
+                                    smoothDepthArray[jIndex] = fromRight ? depthArray[iRight + y * width] : depthArray[iLeft + y * width];
+                                }
+                                else //BUSQUEDA PRECISA
+                                {
+                                    //establecemos el tamaño de la matriz en base a la distancia
+                                    int yFrom = y - distance >= 0 ? y - distance : 0;
+                                    int yTo = y + distance <= heightBound ? y + distance : heightBound;
+                                    int xFrom = slotX - distance >= 0 ? slotX - distance : 0;
+                                    int xTo = slotX + distance <= widthBound ? slotX + distance : widthBound;
+
+                                    //buscamos en la matriz que lo rodea con la distancia minima necesaria
+                                    Dictionary<short, short> filterCollection = new Dictionary<short, short>();
+                                    int found = 0;
+                                    for (int yi = yFrom; yi <= yTo; yi++)
+                                    {
+                                        for (int xi = xFrom; xi <= xTo; xi++)
+                                        {
+                                            found += FindNonZeroDepths(depthArray, width, height, filterCollection, xi, yi);
+                                        }
+                                    }
+
+
+
+                                    //asignamos la que tenga mayor moda
+                                    short mode = 0;
+                                    short depth = 0;
+                                    foreach (short key in filterCollection.Keys)
+                                    {
+                                        if (filterCollection[key] > mode)
+                                        {
+                                            depth = key;
+                                            mode = filterCollection[key];
+                                        };
+                                    }
+                                    smoothDepthArray[jIndex] = depth;
+                                }
+                            }
+
+
+
+                            
+
+                        }
                     }
                     else
                     {
-                        //si estamos buscando, es que el pixel anterior estaba vacio, buscamos el valor por la derecha
-                        iRight = index;
-                        looking = false; //ya hemos terminado esta busqueda local
-
-                        //como tenemos valor por ambos extremos, establecemos a ese valor todos los pixeles intermedios
-                        //aqui seria mejor hacerlo tambien en altura y coger la moda del cuadrado
-
-                        //vemos cual es el mas cercano de los dos lados
-                        int replacingDepthIndex = iLeft;
-                        if (iRight - index < index - iLeft) replacingDepthIndex = iRight;
-                        for (int j = iLeft + 1; j < iRight; j++)
-                        {
-                            smoothDepthArray[j] = depthArray[replacingDepthIndex];
-                        }
+                        //si la profundidad era cero, iniciamos la busqueda
+                        looking = true;
                     }
                 }
-                else
-                {
-                    //si la profundidad era cero, iniciamos la busqueda
-                    looking = true;
-                }
-            }
 
-            //al terminar comprobamos que no se ha quedado abierto por la derecha
-            if (looking)
-            {
-                for (int j = iLeft + 1; j < width; j++)
+                //hemos terminado una fila
+
+                //al terminar comprobamos que no se ha quedado abierto por la derecha
+                if (looking)
                 {
-                    depthArray[j] = depthArray[iLeft];
+                    for (int j = iLeft + 1; j < width; j++)
+                    {
+                        depthArray[j] = depthArray[iLeft];
+                    }
                 }
-            }
-            
+            });
+
+
 
             //Parallel.For(0, height, depthArrayRowIndex =>
             //for (int depthArrayRowIndex = 0; depthArrayRowIndex < height; depthArrayRowIndex++)
-            
-            
+
+
             return smoothDepthArray;
         }
 
@@ -245,14 +315,14 @@ namespace KinectServer.Kinect
         /// Devuelve el numero de valores encontrados
         /// </summary>
         /// <returns></returns>
-        private static int FindNonZeroDepths(short[] depthArray, int width, int height, Dictionary<short, short> filterCollection, BandCoordinate coord)
+        private static int FindNonZeroDepths(short[] depthArray, int width, int height, Dictionary<short, short> filterCollection, int x, int y)
         {
             int foundValues = 0;
 
             //ignoramos los que esten fuera de los limites de la imagen
-            if (coord.X >= 0 && coord.X <= (width - 1) && coord.Y >= 0 && coord.Y <= (height - 1))
+            if (x >= 0 && x <= (width - 1) && y >= 0 && y <= (height - 1))
             {
-                int index = coord.X + (coord.Y * width);
+                int index = x + (y * width);
                 // We only want to look for non-0 values
                 if (depthArray[index] != 0)
                 {
