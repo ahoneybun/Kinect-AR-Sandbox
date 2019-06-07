@@ -43,7 +43,6 @@ namespace KinectClient
         public int MAX;
         public int MIN;
 
-
         public float[,] GetRelativeDepths(Dictionary<string, string> Metadata, bool getRaw = false)
         {
             W = Convert.ToInt32(Metadata[KEY_DEPTH_WIDTH]);
@@ -118,10 +117,14 @@ namespace KinectClient
     /// </summary>
     public partial class MainWindow : Window
     {
+
+        Bitmap Gradient;// BuildGradient()
+
+
         public MainWindow()
         {
             InitializeComponent();
-
+            Gradient = BuildGradient();
             Connect();
         }
 
@@ -183,15 +186,15 @@ namespace KinectClient
                             for (int yi = 0; yi < depths.GetLength(1); yi++)
                             {
                                 float rel = depths[xi, yi];
-                                Int16 grey = Convert.ToInt16(rel * 255);
-                                System.Drawing.Color nc = System.Drawing.Color.FromArgb(255, grey, grey, grey);
-                                bmp.SetPixel(xi, yi, nc);
+                                //Int16 grey = Convert.ToInt16(rel * 255);
+                                //System.Drawing.Color nc = System.Drawing.Color.FromArgb(255, grey, grey, grey);
+                                bmp.SetPixel(xi, yi, RelativeDepthToColor(rel));
 
                                 //raw data
                                 float rawrel = rawdepths[xi, yi];
-                                Int16 rawgrey = Convert.ToInt16(rawrel * 255);
-                                System.Drawing.Color rawnc = System.Drawing.Color.FromArgb(255, rawgrey, rawgrey, rawgrey);
-                                rawbmp.SetPixel(xi, yi, rawnc);
+                                //Int16 rawgrey = Convert.ToInt16(rawrel * 255);
+                                //System.Drawing.Color rawnc = System.Drawing.Color.FromArgb(255, rawgrey, rawgrey, rawgrey);
+                                rawbmp.SetPixel(xi, yi, RelativeDepthToColor(rawrel));
                             }
                         }
 
@@ -234,6 +237,53 @@ namespace KinectClient
             }
         }
 
+        public System.Drawing.Color RelativeDepthToColor(float d)
+        {
+            //Int16 d255 = Convert.ToInt16(d * 255);
+            System.Drawing.Color c = System.Drawing.Color.Black;
+            try
+            {
+                if (d > 0)
+                {
+                    c = Gradient.GetPixel(Convert.ToInt32((d > 1 ? 1 : d) * 99), 0);
+                }
+            }catch(Exception ex)
+            {
+                Console.WriteLine("Fallando");
+            }
+            
+            
+            /*if (d < 1 / 3.0)
+            {
+                c = System.Drawing.Color.FromArgb(255, 0, 0, d255);
+            } else if (d > 2 / 3.0)
+            {
+                c = System.Drawing.Color.FromArgb(255, d255, 0, 0);
+            } else
+            {
+                c = System.Drawing.Color.FromArgb(255, 0, d255, 0);
+            }*/
+
+            return c;
+        }
+
+
+        private Bitmap BuildGradient()
+        {
+            Bitmap b = new Bitmap(100, 1);
+            //creates the gradient scale which the display is based upon... 
+            System.Drawing.Drawing2D.LinearGradientBrush br = new System.Drawing.Drawing2D.LinearGradientBrush(new RectangleF(0, 0, 100, 5), System.Drawing.Color.Black, System.Drawing.Color.Black, 0, false);
+            System.Drawing.Drawing2D.ColorBlend cb = new System.Drawing.Drawing2D.ColorBlend();
+            cb.Positions = new[] { 0, 1 / 6f, 2 / 6f, 3 / 6f, 4 / 6f, 5 / 6f, 1 };
+            cb.Colors = new[] { System.Drawing.Color.Red, System.Drawing.Color.Orange, System.Drawing.Color.Yellow, System.Drawing.Color.Green, System.Drawing.Color.Blue, System.Drawing.Color.FromArgb(153, 204, 255), System.Drawing.Color.White };
+            br.InterpolationColors = cb;
+
+            //puts the gradient scale onto a bitmap which allows for getting a color from pixel
+            Graphics g = Graphics.FromImage(b);
+            g.FillRectangle(br, new RectangleF(0, 0, b.Width, b.Height));
+
+            return b;
+        }
 
 
         public static System.Drawing.Image StringToImage(string base64String)

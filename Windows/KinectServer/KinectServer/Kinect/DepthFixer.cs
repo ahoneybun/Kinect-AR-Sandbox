@@ -22,6 +22,8 @@ namespace KinectServer.Kinect
         private bool enableFilter = false;
         private bool enableAverage = false;
 
+        private int FilterMaxSearchDistance = 10;
+
         public DepthFixer(bool enableFilter, bool enableAverage, int averageFrameCount)
         {
             //this.foundValuesThreshold = foundValuesThreshold;
@@ -115,199 +117,164 @@ namespace KinectServer.Kinect
                 CheckForDequeue();
             }
         }
-
-        public class BandCoordinate
-        {
-            public int X;
-            public int Y;
-        }
-        /*
-        private List<BandCoordinate> GetBandCoordinates(int x, int y, int radius, bool includeInner = false)
-        {
-            List<BandCoordinate> coords = new List<BandCoordinate>();
-
-            BandCoordinate TopLeft = new BandCoordinate() { X = x - radius, Y = y - radius };
-            BandCoordinate BottomRight = new BandCoordinate() { X = x + radius, Y = y + radius };
-
-            //si queremos incluir tambien los cuadrados interiores
-            if (includeInner)
-            {
-                for (int yi = y - radius; yi <= (y + radius); yi++)
-                {
-                    for (int xi = x - radius; xi <= (x + radius); xi++)
-                    {
-                        if (!(xi == x && yi == y)) //ignoramos el centro siempre
-                        {
-                            coords.Add(new BandCoordinate() { X = xi, Y = yi });
-                        }
-                    }
-                }
-            } else
-            {
-                //si solo queremos el borde conforme al radio que hemos definido
-
-                //añadimos los bordes superior e inferior
-                for (int xi = TopLeft.X; xi <= BottomRight.X; xi++)
-                {
-                    coords.Add(new BandCoordinate() { X = xi, Y = TopLeft.Y });
-                    coords.Add(new BandCoordinate() { X = xi, Y = BottomRight.Y });
-                }
-
-                //añadimos los bordes izquierdo y derecho evitando los extremos (que ya hemos añadido anteriormente)
-                for (int yi = TopLeft.Y + 1; yi < BottomRight.Y; yi++)
-                {
-                    coords.Add(new BandCoordinate() { X = TopLeft.X, Y = yi });
-                    coords.Add(new BandCoordinate() { X = BottomRight.X, Y = yi });
-                }
-            }
-
-            return coords;
-        }
-        */
+        
         private short[] CreateFilteredDepthArray(short[] depthArray, int width, int height)
         {
-            /////////////////////////////////////////////////////////////////////////////////////
-            // based on this Codeplex Project https://www.codeproject.com/Articles/317974/KinectDepthSmoothing
-            /////////////////////////////////////////////////////////////////////////////////////
-
             short[] smoothDepthArray = new short[depthArray.Length];
 
-            // We will be using these numbers for constraints on indexes
+            // Lo utilizaremos para los limites al recorrer los arrays
             int widthBound = width - 1;
             int heightBound = height - 1;
-            int MAX_MODE_SEARCH_DISTANCE = 10;
-            // We process each row
 
-
-
-            //TODO hay que hacer la busqueda por bloques, porque lo de la izquierda se me esta saliendo por la derecha (hay que paralelizar las filas)
-
-            //TODO deberia buscarse tambien en altura, y quiza incluso encontrar la moda por matrices alrededor
+            // Recorrido en vertical (cada fila)
             Parallel.For(0, height, y =>
-            //for (int index = 0; index < depthArray.Length; index++)
             {
-
-                int iLeft = 0;
-                int iRight = widthBound;
+                int iLeft = -1;
+                int iRight = -1;
                 bool looking = true;
 
+                // Ahora recorremos horizontalmente buscando "espacios sin datos", a los que llamaremos Huecos
+                // cuya profundidad vale 0.
+                // Lo que haremos sera encontrar donde empieza y acaba un hueco (en su eje X)
+                // y una vez conocidos sus limites, reemplazaremos oportunamente su valor por uno más apropiado
+
+                // Recorrido en horizontal (cada columna)
                 for (int x = 0; x <= widthBound; x++)
                 {
-                    int index = y * width + x;
-
-                    if (depthArray[index] != 0)
+                    int index = y * width + x; //posicion en el array original
+                    if (depthArray[index] == 0)
                     {
-                        //mantenemos el valor original
+                        //si la profundidad era cero, iniciamos la busqueda para determinar cuales son los limites del Hueco
+                        looking = true;
+                    } else {
+                        //si la profundidad no es 0, mantenemos el valor original
                         smoothDepthArray[index] = depthArray[index];
 
-                        //si no estamos buscando, es porque el pixel anterior no estaba vacio, tenemos un valor por la izquierda
+                        //ahora gestionamos los indices que delimitan el Hueco
+
                         if (!looking)
                         {
+                            //si no estamos buscando, es porque el pixel anterior no estaba vacio
+                            //asi que desplazamos a la derecha el indice del extremo izquierdo del Hueco
                             iLeft = x;
                         }
                         else
                         {
-                            //si estamos buscando, es que el pixel anterior estaba vacio, buscamos el valor por la derecha
+                            //si estamos buscando, es que el pixel anterior estaba vacio
+                            //sin embargo, si hemos llegado aqui es que la profundidad del pixel no es 0, por lo que el hueco ha llegado a su fin.
+                            //dejamos por lo tanto de buscar, y corregimos el Hueco
                             iRight = x;
-                            looking = false; //ya hemos terminado esta busqueda local
+                            looking = false;
 
-                            //como tenemos valor por ambos extremos, establecemos a ese valor todos los pixeles intermedios
-                            //aqui seria mejor hacerlo tambien en altura y coger la moda del cuadrado
-
-                            //vemos cual es el mas cercano de los dos lados
-                            /*int replacingDepthIndex = iLeft;
-                            if (iRight - x < x - iLeft) replacingDepthIndex = iRight;
-                            for (int j = iLeft + 1; j < iRight; j++)
-                            {
-                                smoothDepthArray[j + y * width] = depthArray[replacingDepthIndex];
-                            }*/
-
-
-                            //sustituimos cada hueco encontrado
-                            for (int slotX = iLeft + 1; slotX < iRight; slotX++)
-                            {
-                                int jIndex = slotX + y * width;
-                                int distance = iRight - slotX;
-                                bool fromRight = true;
-                                if (slotX - iLeft < distance)
-                                {
-                                    fromRight = false;
-                                    distance = slotX - iLeft;
-                                }
-
-                                if (distance > MAX_MODE_SEARCH_DISTANCE) //BUSQUEDA RAPIDA
-                                {
-                                    //buscar en vertical?
-                                    smoothDepthArray[jIndex] = fromRight ? depthArray[iRight + y * width] : depthArray[iLeft + y * width];
-                                }
-                                else //BUSQUEDA PRECISA
-                                {
-                                    //establecemos el tamaño de la matriz en base a la distancia
-                                    int yFrom = y - distance >= 0 ? y - distance : 0;
-                                    int yTo = y + distance <= heightBound ? y + distance : heightBound;
-                                    int xFrom = slotX - distance >= 0 ? slotX - distance : 0;
-                                    int xTo = slotX + distance <= widthBound ? slotX + distance : widthBound;
-
-                                    //buscamos en la matriz que lo rodea con la distancia minima necesaria
-                                    Dictionary<short, short> filterCollection = new Dictionary<short, short>();
-                                    int found = 0;
-                                    for (int yi = yFrom; yi <= yTo; yi++)
-                                    {
-                                        for (int xi = xFrom; xi <= xTo; xi++)
-                                        {
-                                            found += FindNonZeroDepths(depthArray, width, height, filterCollection, xi, yi);
-                                        }
-                                    }
-
-
-
-                                    //asignamos la que tenga mayor moda
-                                    short mode = 0;
-                                    short depth = 0;
-                                    foreach (short key in filterCollection.Keys)
-                                    {
-                                        if (filterCollection[key] > mode)
-                                        {
-                                            depth = key;
-                                            mode = filterCollection[key];
-                                        };
-                                    }
-                                    smoothDepthArray[jIndex] = depth;
-                                }
-                            }
-
-
-
-                            
+                            FillHole(depthArray, width, height, y, smoothDepthArray, iLeft, iRight);
 
                         }
                     }
-                    else
-                    {
-                        //si la profundidad era cero, iniciamos la busqueda
-                        looking = true;
-                    }
+                    
                 }
 
                 //hemos terminado una fila
-
-                //al terminar comprobamos que no se ha quedado abierto por la derecha
+                //al terminar comprobamos que no estamos en un hueco, por que quedaría "abierto" por la derecha
                 if (looking)
                 {
-                    for (int j = iLeft + 1; j < width; j++)
-                    {
-                        depthArray[j] = depthArray[iLeft];
-                    }
+                    FillHole(depthArray, width, height, y, smoothDepthArray, iLeft, iRight);
                 }
             });
 
 
-
-            //Parallel.For(0, height, depthArrayRowIndex =>
-            //for (int depthArrayRowIndex = 0; depthArrayRowIndex < height; depthArrayRowIndex++)
-
-
             return smoothDepthArray;
+        }
+
+        
+        /// <summary>
+        /// Rellena el hueco con valores determinado a partir de un muestreo de las profundidades que lo rodean
+        /// </summary>
+        private void FillHole(short[] depthArray, int width, int height, int y, short[] smoothDepthArray, int holeLeftXBound, int holeRightXBound)
+        {
+            //vamos recorriendo los pixeles del Hueco, para reemplazarlos por un valor valido
+            for (int holeX = holeLeftXBound + 1; holeX < holeRightXBound; holeX++)
+            {
+                int holeIndex = holeX + y * width; //indice del Hueco en el array plano
+                int distance = holeRightXBound - holeX; //distancia de este pixel del hueco al extremo derecho
+                bool fromRight = true; //determina si el extremo derecho es el mas cercano a este pixel del hueco
+
+                if (holeLeftXBound >= 0) //en otro caso es que no tendremos valor en ese lado, por ejemplo en el margen izquierdo de la imagen
+                {
+                    if (holeRightXBound < holeX || holeX - holeLeftXBound < distance) //si holeRightXBound es menor que el punto actual, significa que no tenemos ese extremo
+                    {
+                        //si la distancia al lado izquierdo es menor que al derecho, actualizamos la distancia y el lado cercano
+                        fromRight = false;
+                        distance = holeX - holeLeftXBound;
+                    }
+                }
+
+                if (holeRightXBound < 0 && holeLeftXBound < 0)
+                {
+                    distance = -1;
+                }
+                
+                smoothDepthArray[holeIndex] = ChooseDepth(depthArray, width, height, holeX, y, holeLeftXBound, holeRightXBound, distance, fromRight);
+            }
+        }
+
+        /// <summary>
+        /// Determina cual seria la profundidad que deberia tener un punto basado en lo que le rodea
+        /// </summary>
+        private short ChooseDepth(short[] depthArray, int width, int height, int x, int y, int holeLeftXBound, int holeRightXBound, int distance, bool fromRight)
+        {
+            short newDepth;
+
+            if (distance < 0)
+            {
+                newDepth = 0; //no tenemos ningun punto pixel valido al alcance, o no conocemos el alcance, no hay nada que hacer
+            }
+            else
+            {
+                //si la distancia al extremo mas cercano es muy grande, reemplazamos usando un mecanismo poco preciso pero rapido
+                //poniendo el mismo color que su extremo mas cercano
+                if (distance > FilterMaxSearchDistance) //BUSQUEDA RAPIDA
+                {
+                    //esto se podria mejorar perdiendo eficiencia, por ejemplo mirando si en vertical hay puntos mas cercanos
+                    newDepth = fromRight ? depthArray[holeRightXBound + y * width] : depthArray[holeLeftXBound + y * width];
+                }
+                else //BUSQUEDA PRECISA
+                {
+                    //establecemos el tamaño de la matriz en base a la distancia
+                    int yFrom = y - distance >= 0 ? y - distance : 0;
+                    int yTo = y + distance <= height - 1 ? y + distance : height - 1;
+                    int xFrom = x - distance >= 0 ? x - distance : 0;
+                    int xTo = x + distance <= width - 1 ? x + distance : width - 1;
+
+                    //buscamos en la matriz todos las profundidades distintas de 0
+                    //y construimos una coleccion que recoge cuantas veces aparece cada profundidad
+                    Dictionary<short, short> filterCollection = new Dictionary<short, short>();
+                    int found = 0;
+                    for (int yi = yFrom; yi <= yTo; yi++)
+                    {
+                        for (int xi = xFrom; xi <= xTo; xi++)
+                        {
+                            //TODO estaria bien "agregar" quitando un nivel de precision a la profundidad, porque si no la modo
+                            //siempre tendra frecuencia 1
+                            found += FindNonZeroDepths(depthArray, width, height, filterCollection, xi, yi);
+                        }
+                    }
+
+                    //Cogemos la profundidad con mas ocurrencias (la moda) sustituimos el pixel del hueco por ese valor
+                    short mode = 0;
+                    short depth = 0;
+                    foreach (short key in filterCollection.Keys)
+                    {
+                        if (filterCollection[key] > mode)
+                        {
+                            depth = key;
+                            mode = filterCollection[key];
+                        };
+                    }
+                    newDepth = depth;
+                }
+            }
+
+            return newDepth;
         }
 
         /// <summary>
