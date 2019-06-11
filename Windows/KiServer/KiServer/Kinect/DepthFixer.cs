@@ -190,6 +190,8 @@ namespace KiServer.Kinect
         private short[] CreateFilteredDepthArray(short[] depthArray, int width, int height)
         {
             short[] smoothDepthArray = new short[depthArray.Length];
+            depthArray.CopyTo(smoothDepthArray, 0);
+            //short[] smoothDepthArray = depthArray;
 
             // Lo utilizaremos para los limites al recorrer los arrays
             int widthBound = width - 1;
@@ -263,33 +265,22 @@ namespace KiServer.Kinect
             //vamos recorriendo los pixeles del Hueco, para reemplazarlos por un valor valido
             for (int holeX = holeLeftXBound + 1; holeX < (isLastHole ? width : holeRightXBound); holeX++)
             {
-                int holeIndex = holeX + y * width; //indice del Hueco en el array plano
-                int distance = holeRightXBound - holeX; //distancia de este pixel del hueco al extremo derecho
-                bool fromRight = true; //determina si el extremo derecho es el mas cercano a este pixel del hueco
-
-                if (holeLeftXBound >= 0) //en otro caso es que no tendremos valor en ese lado, por ejemplo en el margen izquierdo de la imagen
-                {
-                    if (holeRightXBound < holeX || holeX - holeLeftXBound < distance) //si holeRightXBound es menor que el punto actual, significa que no tenemos ese extremo
-                    {
-                        //si la distancia al lado izquierdo es menor que al derecho, actualizamos la distancia y el lado cercano
-                        fromRight = false;
-                        distance = holeX - holeLeftXBound;
-                    }
-                }
-
-                if (holeRightXBound < 0 && holeLeftXBound < 0)
-                {
-                    distance = -1;
-                }
                 
-                smoothDepthArray[holeIndex] = ChooseDepth(depthArray, width, height, holeX, y, holeLeftXBound, holeRightXBound, distance, fromRight);
+                int holeIndex = holeX + y * width; //indice del Hueco en el array plano
+                int distance = -1;
+
+                //cogemos la distancia al lado mas corto
+                if (holeRightXBound > 0) distance = holeRightXBound - holeX;
+                if (holeLeftXBound > 0 && holeX - holeLeftXBound < distance) distance = holeX - holeLeftXBound;
+                
+                smoothDepthArray[holeIndex] = ChooseDepth(depthArray, width, height, holeX, y, holeLeftXBound, holeRightXBound, distance);
             }
         }
 
         /// <summary>
         /// Determina cual seria la profundidad que deberia tener un punto basado en lo que le rodea
         /// </summary>
-        private short ChooseDepth(short[] depthArray, int width, int height, int x, int y, int holeLeftXBound, int holeRightXBound, int distance, bool fromRight)
+        private short ChooseDepth(short[] depthArray, int width, int height, int x, int y, int holeLeftXBound, int holeRightXBound, int distance)
         {
             short newDepth;
 
@@ -298,7 +289,7 @@ namespace KiServer.Kinect
             if (distance < 0)
             {
                 //no tenemos ningun punto pixel valido al alcance, vamos a intentar con el alcance maximo por si en vertical encontramos algo
-                newDepth = PreciseDepthSearch(depthArray, width, height, x, y, FilterMaxSearchDistance);
+                newDepth = FastVerticalDepthSearch(depthArray, width, height, x, y);
             }
             else
             {
@@ -307,18 +298,79 @@ namespace KiServer.Kinect
                 if (distance > FilterMaxSearchDistance) //BUSQUEDA RAPIDA
                 {
                     //esto se podria mejorar perdiendo eficiencia, por ejemplo mirando si en vertical hay puntos mas cercanos
-                    newDepth = fromRight ? depthArray[holeRightXBound + y * width] : depthArray[holeLeftXBound + y * width];
+                    newDepth = FastHorizontalDepthSearch(depthArray, width, height, x, y, holeLeftXBound, holeRightXBound);
                 }
                 else //BUSQUEDA PRECISA
                 {
-                    newDepth = PreciseDepthSearch(depthArray, width, height, x, y, distance);
+                    newDepth = PreciseMatrixDepthSearch(depthArray, width, height, x, y, distance);
                 }
             }
 
             return newDepth;
         }
 
-        private static short PreciseDepthSearch(short[] depthArray, int width, int height, int x, int y, int distance)
+        private static short FastHorizontalDepthSearch(short[] depthArray, int width, int height, int holeX, int holeY, int holeLeftXBound, int holeRightXBound)
+        {
+            if (holeRightXBound < 0 && holeLeftXBound < 0) return 0; //si no conocemos ningun extremo... no hay nada que hacer
+
+            bool fromRight = true; //determina si el extremo derecho es el mas cercano a este pixel del hueco
+            if (holeLeftXBound >= 0) //en otro caso es que no tendremos valor en ese lado, por ejemplo en el margen izquierdo de la imagen
+            {
+                if (holeRightXBound < holeX || holeX - holeLeftXBound < holeRightXBound - holeX) //si holeRightXBound es menor que el punto actual, significa que no tenemos ese extremo
+                {
+                    //si la distancia al lado izquierdo es menor que al derecho, actualizamos la distancia y el lado cercano
+                    fromRight = false;
+                }
+            }            
+
+            return fromRight ? depthArray[holeRightXBound + holeY * width] : depthArray[holeLeftXBound + holeY * width];
+        }
+
+
+        private static short FastVerticalDepthSearch(short[] depthArray, int width, int height, int holeX, int holeY)
+        {
+            int maxDistance = height - holeY > holeY ? height - holeY : holeY;
+            int xLeft = holeX - 1 >= 0 ? holeX - 1 : holeX;
+            int xMiddle = xLeft == holeX ? holeX + 1 : holeX;
+
+            short depth = 0;
+
+            for (int y = 1; y < maxDistance; y++)
+            {
+                if (holeY - y >= 0)
+                {
+                    //busqueda hacia arriba
+                    if (depthArray[xLeft + (holeY - y) * width] != 0)
+                    {
+                        depth = depthArray[xLeft + (holeY - y) * width];
+                        break;
+                    }
+                    if (depthArray[xMiddle + (holeY - y) * width] != 0)
+                    {
+                        depth = depthArray[xMiddle + (holeY - y) * width];
+                        break;
+                    }
+                }
+                if (holeY + y < height)
+                {
+                    //busqueda hacia abajo
+                    if (depthArray[xLeft + (holeY + y) * width] != 0)
+                    {
+                        depth = depthArray[xLeft + (holeY + y) * width];
+                        break;
+                    }
+                    if (depthArray[xMiddle + (holeY + y) * width] != 0)
+                    {
+                        depth = depthArray[xMiddle + (holeY + y) * width];
+                        break;
+                    }
+                }
+            }
+
+            return depth;
+        }
+
+        private static short PreciseMatrixDepthSearch(short[] depthArray, int width, int height, int x, int y, int distance)
         {
             //establecemos el tamaño de la matriz en base a la distancia
             int yFrom = y - distance >= 0 ? y - distance : 0;

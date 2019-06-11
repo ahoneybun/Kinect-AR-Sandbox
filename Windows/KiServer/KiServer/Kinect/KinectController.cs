@@ -152,7 +152,7 @@ namespace KiServer.Kinect
                     //int maxDepth = depthFrame.MaxDepth;
 
 
-                    Console.WriteLine("Depth " + MinDepthRange + "/" + MaxDepthRange + " -> " + this.depthPixels[300].Depth);
+                    //Console.WriteLine("Depth " + MinDepthRange + "/" + MaxDepthRange + " -> " + this.depthPixels[300].Depth);
 
 
                     short[] depth = this.depthPixels.Select(pixel => pixel.Depth).ToArray();
