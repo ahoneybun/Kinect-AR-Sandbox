@@ -237,7 +237,7 @@ namespace KiServer.Kinect
                             iRight = x;
                             looking = false;
 
-                            FillHole(depthArray, width, height, y, smoothDepthArray, iLeft, iRight);
+                            FillHole(smoothDepthArray, width, height, y, iLeft, iRight);
 
                         }
                     }
@@ -248,7 +248,7 @@ namespace KiServer.Kinect
                 //al terminar comprobamos que no estamos en un hueco, por que quedaría "abierto" por la derecha
                 if (looking)
                 {
-                    FillHole(depthArray, width, height, y, smoothDepthArray, iLeft, iRight, true);
+                    FillHole(smoothDepthArray, width, height, y, iLeft, iRight, true);
                 }
             });
 
@@ -260,7 +260,7 @@ namespace KiServer.Kinect
         /// <summary>
         /// Rellena el hueco con valores determinado a partir de un muestreo de las profundidades que lo rodean
         /// </summary>
-        private void FillHole(short[] depthArray, int width, int height, int y, short[] smoothDepthArray, int holeLeftXBound, int holeRightXBound, bool isLastHole = false)
+        private void FillHole(short[] depthArray, int width, int height, int y, int holeLeftXBound, int holeRightXBound, bool isLastHole = false)
         {
             //vamos recorriendo los pixeles del Hueco, para reemplazarlos por un valor valido
             for (int holeX = holeLeftXBound + 1; holeX < (isLastHole ? width : holeRightXBound); holeX++)
@@ -272,8 +272,8 @@ namespace KiServer.Kinect
                 //cogemos la distancia al lado mas corto
                 if (holeRightXBound > 0) distance = holeRightXBound - holeX;
                 if (holeLeftXBound > 0 && holeX - holeLeftXBound < distance) distance = holeX - holeLeftXBound;
-                
-                smoothDepthArray[holeIndex] = ChooseDepth(depthArray, width, height, holeX, y, holeLeftXBound, holeRightXBound, distance);
+
+                depthArray[holeIndex] = ChooseDepth(depthArray, width, height, holeX, y, holeLeftXBound, holeRightXBound, distance);
             }
         }
 
@@ -386,8 +386,6 @@ namespace KiServer.Kinect
             {
                 for (int xi = xFrom; xi <= xTo; xi++)
                 {
-                    //TODO estaria bien "agregar" quitando un nivel de precision a la profundidad, porque si no la modo
-                    //siempre tendra frecuencia 1
                     found += FindNonZeroDepths(depthArray, width, height, filterCollection, xi, yi);
                 }
             }
@@ -399,7 +397,7 @@ namespace KiServer.Kinect
             {
                 if (filterCollection[key] > mode)
                 {
-                    depth = key;
+                    depth = Convert.ToInt16(key * 10 + 5);
                     mode = filterCollection[key];
                 };
             }
@@ -423,7 +421,7 @@ namespace KiServer.Kinect
                 // We only want to look for non-0 values
                 if (depthArray[index] != 0)
                 {
-                    short evaluatingDepth = depthArray[index];
+                    short evaluatingDepth = Convert.ToInt16(depthArray[index] / 10); //redondeamos a decenas para que se produzca cierta agregacion
                     if (!filterCollection.ContainsKey(evaluatingDepth))
                     {
                         // Cuando no existe esta profundidad, la creamos e inicializamos su frecuencia
