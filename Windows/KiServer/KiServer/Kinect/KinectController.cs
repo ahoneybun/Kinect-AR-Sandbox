@@ -37,6 +37,7 @@ namespace KiServer.Kinect
         bool EnableFilterHistorical = false;
         bool EnableFilterHolesFilling = false;
         bool EnableFilterAverageMoving = false;
+        bool EnableFilterModeMoving = false;
         int MaxFilterHolesFillingDistance = 10;
         int MaxAvgFrames = 4;
 
@@ -62,10 +63,18 @@ namespace KiServer.Kinect
             SetupFilter();
         }
 
+        public void SetFilterModeMoving(bool enabled, int frames = 1)
+        {
+            EnableFilterModeMoving = enabled;
+            MaxAvgFrames = frames;
+            SetupFilter();
+        }
+
         private void SetupFilter()
         {
             if (DepthFixer != null)
             {
+                DepthFixer.SetFilterModeMoving(EnableFilterModeMoving, MaxAvgFrames);
                 DepthFixer.SetFilterHistorical(EnableFilterHistorical);
                 DepthFixer.SetFilterHolesFilling(EnableFilterHolesFilling, MaxFilterHolesFillingDistance);
                 DepthFixer.SetFilterAverageMoving(EnableFilterAverageMoving, MaxAvgFrames);

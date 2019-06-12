@@ -91,6 +91,10 @@ namespace KiServer
                 backgroundTask.SetFilterAverageMoving((bool)avgCheck.IsChecked, avgValue);
                 avgText.Content = avgValue + " frames";
 
+
+                //mode filter
+                backgroundTask.SetFilterModeMoving((bool)modeCheck.IsChecked, avgValue);
+
                 //historical
                 backgroundTask.SetFilterHistorical((bool)histCheck.IsChecked);
 

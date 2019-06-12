@@ -70,6 +70,11 @@ namespace KiServer
             kinectController.SetFilterAverageMoving(enabled, frames);
         }
 
+        public void SetFilterModeMoving(bool enabled, int frames = 1)
+        {
+            kinectController.SetFilterModeMoving(enabled, frames);
+        }
+
         //Control methods
         public void Start()
         {

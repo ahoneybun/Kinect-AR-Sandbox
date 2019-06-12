@@ -18,10 +18,12 @@ namespace KiServer.Kinect
 
         // The actual Queue that will hold all of the frames to be averaged
         private Queue<short[]> averageQueue = new Queue<short[]>();
+        private Queue<short[]> modeQueue = new Queue<short[]>();
         private short[] correctionLayer = null;
 
         private bool enableFilter = false;
         private bool enableAverage = false;
+        private bool enableMode = false;
         private bool enableHistoricalHolesFilter = false;
         private int FilterMaxSearchDistance = 10;
 
@@ -37,6 +39,12 @@ namespace KiServer.Kinect
         public void SetFilterHistorical(bool enabled)
         {
             enableHistoricalHolesFilter = enabled;
+        }
+
+        public void SetFilterModeMoving(bool enabled, int frames = 1)
+        {
+            enableMode = enabled;
+            averageFrameCount = frames;
         }
 
         public void SetFilterHolesFilling(bool enabled, int maxDistance = 10)
@@ -64,6 +72,11 @@ namespace KiServer.Kinect
             if (this.enableFilter)
             {
                 depthResult = CreateFilteredDepthArray(depthResult != null ? depthResult : depth, Width, Height);
+            }
+
+            if (this.enableMode)
+            {
+                depthResult = CreateModeDepthArray(depthResult != null ? depthResult : depth);
             }
 
             if (this.enableAverage)
@@ -118,7 +131,64 @@ namespace KiServer.Kinect
             return averagedDepthArray;
         }
 
+        
 
+        private short[] CreateModeDepthArray(short[] depthArray)
+        {
+            // This is a method of Weighted Moving Average per pixel coordinate across several frames of depth data.
+            // This means that newer frames are linearly weighted heavier than older frames to reduce motion tails,
+            // while still having the effect of reducing noise flickering.
+
+            modeQueue.Enqueue(depthArray);
+
+            CheckForDequeue();
+
+            short[] modeDepthArray = new short[depthArray.Length];
+            Dictionary<short, short>[] frecuencyArray = new Dictionary<short, short>[depthArray.Length];
+
+            short Count = 1;
+            foreach (var item in modeQueue)
+            {
+                // Process each row in parallel
+                Parallel.For(0, Height, depthArrayRowIndex =>
+                {
+                    // Process each pixel in the row
+                    for (int depthArrayColumnIndex = 0; depthArrayColumnIndex < Width; depthArrayColumnIndex++)
+                    {
+                        var index = depthArrayColumnIndex + (depthArrayRowIndex * Width);
+                        short depthKey = Convert.ToInt16(item[index] / 10);
+                        if (frecuencyArray[index] == null)
+                        {
+                            frecuencyArray[index] = new Dictionary<short, short>();
+                        }
+                        if (!frecuencyArray[index].ContainsKey(depthKey))
+                        {
+                            frecuencyArray[index].Add(depthKey, 0);
+                        }
+
+                        frecuencyArray[index][depthKey] += Count;
+                    }
+                });
+                Count++;
+            }
+
+            for(int i = 0; i < frecuencyArray.Length; i++)
+            {
+                short mode = 0;
+                short depth = 0;
+                foreach (short key in frecuencyArray[i].Keys)
+                {
+                    if (frecuencyArray[i][key] > mode)
+                    {
+                        depth = Convert.ToInt16(key * 10 + 5);
+                        mode = frecuencyArray[i][key];
+                    };
+                }
+                modeDepthArray[i] = depth;
+            }
+
+            return modeDepthArray;
+        }
 
         private short[] CreateAverageDepthArray(short[] depthArray)
         {
