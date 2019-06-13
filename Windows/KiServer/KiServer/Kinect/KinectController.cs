@@ -74,10 +74,10 @@ namespace KiServer.Kinect
         {
             if (DepthFixer != null)
             {
-                DepthFixer.SetFilterModeMoving(EnableFilterModeMoving, MaxAvgFrames);
-                DepthFixer.SetFilterHistorical(EnableFilterHistorical);
-                DepthFixer.SetFilterHolesFilling(EnableFilterHolesFilling, MaxFilterHolesFillingDistance);
-                DepthFixer.SetFilterAverageMoving(EnableFilterAverageMoving, MaxAvgFrames);
+                DepthFixer.SetModeMovingFilter(EnableFilterModeMoving, MaxAvgFrames);
+                DepthFixer.SetHolesWithHistoricalFilter(EnableFilterHistorical);
+                DepthFixer.SetClosestPointsFilter(EnableFilterHolesFilling, MaxFilterHolesFillingDistance);
+                DepthFixer.SetAverageMovingFilter(EnableFilterAverageMoving, MaxAvgFrames);
             }
         }
 

@@ -64,6 +64,10 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="BackgroundTask.cs" />
+    <Compile Include="Kinect\Fix\AverageMovingFilter.cs" />
+    <Compile Include="Kinect\Fix\ClosestPointsFilter.cs" />
+    <Compile Include="Kinect\Fix\HolesWithHistorical.cs" />
+    <Compile Include="Kinect\Fix\ModeMovingFilter.cs" />
     <Compile Include="TCP\DataListener.cs" />
     <Compile Include="TCP\TCPData.cs" />
     <Compile Include="TCP\TCPHelpers.cs" />
