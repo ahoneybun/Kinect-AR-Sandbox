@@ -11,21 +11,30 @@ namespace KiServer.Kinect
         public long Timestamp;
         public short[] DepthArray;
         public short[] RawDepthArray;
-        public int DepthWidth;
-        public int DepthHeight;
+        public short[] RawColorArray;
+        public int Width;
+        public int Height;
         public short MinDepth;
         public short MaxDepth;
 
-        public KinectData(short[] rawDepthPixels, short[] depthPixels, int depthWidth, int depthHeight, short minDepth, short maxDepth)
+        public KinectData(int width, int height)
         {
             Timestamp = DateTime.UtcNow.Ticks;
+            Width = width;
+            Height = height;
+        }
 
+        public void SetDepthData(short[] rawDepthPixels, short[] depthPixels, short minDepth, short maxDepth)
+        {
             RawDepthArray = rawDepthPixels;
-            DepthArray = depthPixels;//depthPixels.Select(pixel => pixel.Depth).ToArray();
-            DepthWidth = depthWidth;
-            DepthHeight = depthHeight;
+            DepthArray = depthPixels;
             MinDepth = minDepth;
             MaxDepth = maxDepth;
+        }
+
+        public void SetColorData(short[] rawColorPixels)
+        {
+            RawColorArray = rawColorPixels;
         }
     }
 }

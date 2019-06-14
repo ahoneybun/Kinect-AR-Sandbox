@@ -22,9 +22,12 @@ namespace KiServer.Kinect
         /// Intermediate storage for the depth data received from the camera
         /// </summary>
         private DepthImagePixel[] depthPixels;
+        private byte[] colorPixels;
 
-        private const int Width = 320; //320
-        private const int Height = 240; //240
+        private const int DepthWidth = 320; //320
+        private const int DepthHeight = 240; //240
+        private const int ColorWidth = 640; //320
+        private const int ColorHeight = 480; //240
 
         private int fpsController = 0;
         private int FPS_MOD = 1; //30 = 1 por segundo
@@ -86,7 +89,7 @@ namespace KiServer.Kinect
         /// </summary>
         public void StartSensor()
         {
-            DepthFixer = new DepthFixer(Width, Height);
+            DepthFixer = new DepthFixer(DepthWidth, DepthHeight);
             SetupFilter();
 
 
@@ -107,18 +110,21 @@ namespace KiServer.Kinect
             //this.sensor.DepthStream.Range = DepthRange.Default;
 
             // Turn on the depth stream to receive depth frames
-            if (Width == 640)
+            if (DepthWidth == 640)
             {
                 this.sensor.DepthStream.Enable(DepthImageFormat.Resolution640x480Fps30);
             } else {
                 this.sensor.DepthStream.Enable(DepthImageFormat.Resolution320x240Fps30);
             }
 
+            this.sensor.ColorStream.Enable(ColorImageFormat.RgbResolution640x480Fps30);
+
             // Allocate space to put the depth pixels we'll receive
             this.depthPixels = new DepthImagePixel[this.sensor.DepthStream.FramePixelDataLength];
-
+            this.colorPixels = new byte[this.sensor.ColorStream.FramePixelDataLength];
             // Add an event handler to be called whenever there is new depth frame data
             this.sensor.DepthFrameReady += this.SensorDepthFrameReady;
+            this.sensor.ColorFrameReady += this.SensorColorFrameReady;
 
             // Start the sensor!
             try
@@ -140,6 +146,30 @@ namespace KiServer.Kinect
             if (null != this.sensor)
             {
                 this.sensor.Stop();
+            }
+        }
+
+
+        private void SensorColorFrameReady(object sender, ColorImageFrameReadyEventArgs e)
+        {
+            using (ColorImageFrame colorFrame = e.OpenColorImageFrame())
+            {
+                if (colorFrame != null)
+                {
+                    // Copy the pixel data from the image to a temporary array
+                    colorFrame.CopyPixelDataTo(this.colorPixels);
+
+                    KinectData kd = new KinectData(ColorWidth, ColorHeight);
+                    kd.SetColorData(this.colorPixels.Select(pixel => Convert.ToInt16(pixel)).ToArray());
+
+                    //sender matrix
+
+                    if (Frame != null)// && fpsController == FPS_MOD)
+                    {
+                        //fpsController = 0; //reset counter
+                        Frame(kd, e);
+                    }
+                }
             }
         }
 
@@ -166,8 +196,8 @@ namespace KiServer.Kinect
 
                     short[] depth = this.depthPixels.Select(pixel => pixel.Depth).ToArray();
                     short[] depthFixed = DepthFixer.Fix(depth);
-                    KinectData kd = new KinectData(depth, depthFixed, Width, Height, MinDepthRange, MaxDepthRange);
-
+                    KinectData kd = new KinectData(DepthWidth, DepthHeight);
+                    kd.SetDepthData(depth, depthFixed, MinDepthRange, MaxDepthRange);
                     //sender matrix
 
                     if (Frame != null && fpsController == FPS_MOD)

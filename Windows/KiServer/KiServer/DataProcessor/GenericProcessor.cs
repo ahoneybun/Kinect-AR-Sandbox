@@ -30,8 +30,8 @@ namespace KiServer.DataProcessor
             int min = kinectData.MinDepth;
 
             //Metemos los atributos que queremos enviar
-            pd.Metadata.Add(KEY_DEPTH_WIDTH, kinectData.DepthWidth.ToString());
-            pd.Metadata.Add(KEY_DEPTH_HEIGHT, kinectData.DepthHeight.ToString());
+            pd.Metadata.Add(KEY_DEPTH_WIDTH, kinectData.Width.ToString());
+            pd.Metadata.Add(KEY_DEPTH_HEIGHT, kinectData.Height.ToString());
 
             pd.Metadata.Add(KEY_DEPTH_MIN, min.ToString());
             pd.Metadata.Add(KEY_DEPTH_MAX, max.ToString());

@@ -22,6 +22,7 @@ namespace KiServer
         //UI Controls
         Image rawCanvas = null;
         Image fixedCanvas = null;
+        Image rawColorCanvas = null;
 
 
         DateTime fpsTimestamp = DateTime.MinValue;
@@ -38,6 +39,11 @@ namespace KiServer
             //Controlador para empezar a capturar imagenes de la camara
             kinectController = new KinectController();
             kinectController.Frame += new KinectController.NewImageHandler(NewFrameListener);
+        }
+
+        public void SetRawColorCanvas(Image canvas)
+        {
+            rawColorCanvas = canvas;
         }
 
         public void SetRawCanvas(Image canvas)
@@ -143,15 +149,57 @@ namespace KiServer
         }
 
 
-        //Listener cada vez que se ha obtenido una nueva imagen de la camara
-        public void NewFrameListener(KinectData depth, EventArgs e)
+        private void PrintColorOnCanvas(short[] imageArray, Image canvas, int width, int height)
         {
-            PrintFPS();
+            try
+            {
+                System.Drawing.Bitmap bmp = new System.Drawing.Bitmap(width, height);
+                int index = 0;
+                int x = 0;
+                int y = 0;
+                for (int i = 0; i < imageArray.Length; i = i + 4)
+                {
+                    x = index % width;
+                    y = (int)Math.Floor(index / (float)width);
+
+                    System.Drawing.Color c = System.Drawing.Color.FromArgb(imageArray[i + 3], imageArray[i], imageArray[i + 1], imageArray[i + 2]);
+
+                    bmp.SetPixel(x, y, c);
+                    index++;
+                }
+
+                BitmapImage bitmap = ConvertToBitmapImage(bmp);
+
+                canvas.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate ()
+                {
+                    canvas.Source = bitmap;
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+        }
+
+
+        //Listener cada vez que se ha obtenido una nueva imagen de la camara
+        public void NewFrameListener(KinectData data, EventArgs e)
+        {
+            if (data.DepthArray != null)
+            {
+                PrintFPS();
+            }
 
             if (EnablePreview)
             {
-                if (fixedCanvas != null) PrintDepthOnCanvas(depth.DepthArray, fixedCanvas, depth.DepthWidth, depth.DepthHeight, depth.MaxDepth);
-                if (rawCanvas != null) PrintDepthOnCanvas(depth.RawDepthArray, rawCanvas, depth.DepthWidth, depth.DepthHeight, depth.MaxDepth);
+                if (data.DepthArray != null)
+                {
+                    if (fixedCanvas != null) PrintDepthOnCanvas(data.DepthArray, fixedCanvas, data.Width, data.Height, data.MaxDepth);
+                    if (rawCanvas != null) PrintDepthOnCanvas(data.RawDepthArray, rawCanvas, data.Width, data.Height, data.MaxDepth);
+                } else if (data.RawColorArray != null)
+                {
+                    if (rawColorCanvas != null) PrintColorOnCanvas(data.RawColorArray, rawColorCanvas, data.Width, data.Height); 
+                }
             }
         }
 

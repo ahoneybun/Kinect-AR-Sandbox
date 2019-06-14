@@ -37,6 +37,7 @@ namespace KiServer
             backgroundTask.SetFixedCanvas(canvasFixed);
             backgroundTask.SetRawCanvas(canvasRaw);
             backgroundTask.SetFpsText(fpsText);
+            backgroundTask.SetRawColorCanvas(canvasRawColor);
 
             backgroundTask.EnablePreview = (bool)previewCheck.IsChecked;
 
