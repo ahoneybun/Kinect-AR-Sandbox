@@ -12,7 +12,7 @@ namespace KiServer.Kinect.Fix
 
         public void SetLastCorrectionLayer(short[] data)
         {
-            correctionLayer = data;
+            data.CopyTo(correctionLayer, 0);
         }
 
 

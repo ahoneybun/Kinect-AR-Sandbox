@@ -148,18 +148,11 @@ namespace KiServer
             }
         }
 
-        private void PrintColorOnCanvas(byte[] imageArray, Image canvas, int width, int height)
+        private void PrintColorOnCanvas(System.Drawing.Image imageArray, Image canvas, int width, int height)
         {
             try
             {
-                WriteableBitmap colorBitmap = new WriteableBitmap(width, height, 96.0, 96.0, System.Windows.Media.PixelFormats.Bgr32, null);
-
-                colorBitmap.WritePixels(
-                        new System.Windows.Int32Rect(0, 0, width, height),
-                        imageArray,
-                        width * sizeof(int),
-                        0);
-                colorBitmap.Freeze();
+                
 
                 /*int index = 0;
                 int x = 0;
@@ -181,7 +174,7 @@ namespace KiServer
 
                 canvas.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate ()
                 {
-                    canvas.Source = colorBitmap;
+                    canvas.Source = ConvertToBitmapImage(imageArray);
                 });
             }
             catch (Exception ex)
@@ -267,7 +260,7 @@ namespace KiServer
         {
             using (var memory = new System.IO.MemoryStream())
             {
-                img.Save(memory, System.Drawing.Imaging.ImageFormat.Png);
+                img.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
                 memory.Position = 0;
 
                 var bitmapImage = new BitmapImage();

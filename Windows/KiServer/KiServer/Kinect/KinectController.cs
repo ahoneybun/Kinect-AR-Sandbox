@@ -3,6 +3,8 @@ using System.IO;
 using Microsoft.Kinect;
 
 using System.Linq;
+using System.Drawing;
+
 namespace KiServer.Kinect
 {
     public class KinectController
@@ -154,7 +156,20 @@ namespace KiServer.Kinect
                 this.sensor.Stop();
             }
         }
-
+        private Bitmap ImageToBitmap(ColorImageFrame img)
+        {
+            byte[] pixeldata = new byte[img.PixelDataLength];
+            img.CopyPixelDataTo(pixeldata);
+            Bitmap bmap = new Bitmap(img.Width, img.Height, System.Drawing.Imaging.PixelFormat.Format32bppRgb);
+            System.Drawing.Imaging.BitmapData bmapdata = bmap.LockBits(
+                new Rectangle(0, 0, img.Width, img.Height),
+                System.Drawing.Imaging.ImageLockMode.WriteOnly,
+                bmap.PixelFormat);
+            IntPtr ptr = bmapdata.Scan0;
+            System.Runtime.InteropServices.Marshal.Copy(pixeldata, 0, ptr, img.PixelDataLength);
+            bmap.UnlockBits(bmapdata);
+            return bmap;
+        }
 
         private void SensorColorFrameReady(object sender, ColorImageFrameReadyEventArgs e)
         {
@@ -166,8 +181,42 @@ namespace KiServer.Kinect
                     colorFrame.CopyPixelDataTo(this.colorPixels);
 
                     KinectData kd = new KinectData(ColorWidth, ColorHeight);
-                    kd.SetColorData(this.colorPixels);
 
+
+
+                    //https://stackoverflow.com/questions/38989837/convert-rgb-array-to-image-in-c-sharp
+                    /*
+                    System.Windows.Media.Imaging.WriteableBitmap colorBitmap = new System.Windows.Media.Imaging.WriteableBitmap(ColorWidth, ColorHeight, 96.0, 96.0, System.Windows.Media.PixelFormats.Bgr32, null);
+
+                    colorBitmap.WritePixels(
+                            new System.Windows.Int32Rect(0, 0, ColorWidth, ColorHeight),
+                            this.colorPixels,
+                            ColorWidth * sizeof(int),
+                            0);
+                    
+
+                    kd.SetColorData(BitmapFromWriteableBitmap(colorBitmap));
+                    */
+
+                    kd.SetColorData(ImageToBitmap(colorFrame));
+                    /*
+                    System.Drawing.Bitmap B = new System.Drawing.Bitmap(ColorWidth, ColorHeight);
+                    int r, g, b, a;
+                    int index = 0;
+                    for (int y = 0; y < ColorHeight; y++)
+                    {
+                        for (int x = 0; x < ColorWidth; x++)
+                        {
+                            r = colorPixels[index++];
+                            g = colorPixels[index++];
+                            b = colorPixels[index++];
+                            a = colorPixels[index++];
+                            B.SetPixel(x, y, System.Drawing.Color.FromArgb(a, r, g, b));
+                        }
+                    }
+
+                    kd.SetColorData(B);
+                    */
                     //sender matrix
 
                     if (Frame != null)// && fpsController == FPS_MOD)
@@ -178,6 +227,25 @@ namespace KiServer.Kinect
                 }
             }
         }
+
+        public System.Windows.Media.Imaging.BitmapImage ConvertWriteableBitmapToBitmapImage(System.Windows.Media.Imaging.WriteableBitmap wbm)
+        {
+            System.Windows.Media.Imaging.BitmapImage bmImage = new System.Windows.Media.Imaging.BitmapImage();
+            using (MemoryStream stream = new MemoryStream())
+            {
+                System.Windows.Media.Imaging.PngBitmapEncoder encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
+                encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(wbm));
+                encoder.Save(stream);
+                bmImage.BeginInit();
+                bmImage.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                bmImage.StreamSource = stream;
+                bmImage.EndInit();
+                bmImage.Freeze();
+            }
+            return bmImage;
+        }
+
+
 
         /// <summary>
         /// Event handler for Kinect sensor's DepthFrameReady event

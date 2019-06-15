@@ -77,6 +77,12 @@ namespace KiServer.Kinect
             if (holesFilter != null)
             {
                 depthResult = holesFilter.ReplaceHolesWithHistorical(depth);
+
+                //guardamos el ultimo array como capa de correccion
+                if (holesFilter != null)
+                {
+                    holesFilter.SetLastCorrectionLayer(depthResult);
+                }
             }
 
             if (closestFilter != null)
@@ -97,11 +103,6 @@ namespace KiServer.Kinect
             //si no habia ningun filtro activo
             if (depthResult == null) depthResult = depth;
 
-            //guardamos el ultimo array como capa de correccion
-            if (holesFilter != null)
-            {
-                holesFilter.SetLastCorrectionLayer(depthResult);
-            }
 
             return depthResult;
         }
