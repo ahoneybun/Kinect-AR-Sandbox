@@ -148,13 +148,20 @@ namespace KiServer
             }
         }
 
-
-        private void PrintColorOnCanvas(short[] imageArray, Image canvas, int width, int height)
+        private void PrintColorOnCanvas(byte[] imageArray, Image canvas, int width, int height)
         {
             try
             {
-                System.Drawing.Bitmap bmp = new System.Drawing.Bitmap(width, height);
-                int index = 0;
+                WriteableBitmap colorBitmap = new WriteableBitmap(width, height, 96.0, 96.0, System.Windows.Media.PixelFormats.Bgr32, null);
+
+                colorBitmap.WritePixels(
+                        new System.Windows.Int32Rect(0, 0, width, height),
+                        imageArray,
+                        width * sizeof(int),
+                        0);
+                colorBitmap.Freeze();
+
+                /*int index = 0;
                 int x = 0;
                 int y = 0;
                 for (int i = 0; i < imageArray.Length; i = i + 4)
@@ -168,11 +175,13 @@ namespace KiServer
                     index++;
                 }
 
-                BitmapImage bitmap = ConvertToBitmapImage(bmp);
+                BitmapImage bitmap = ConvertToBitmapImage(bmp);*/
+
+
 
                 canvas.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate ()
                 {
-                    canvas.Source = bitmap;
+                    canvas.Source = colorBitmap;
                 });
             }
             catch (Exception ex)
@@ -238,6 +247,20 @@ namespace KiServer
             }
 
             return c;
+        }
+
+
+        private static BitmapImage ConvertToBitmapImage(byte[] img)
+        {
+            BitmapImage biImg = new BitmapImage();
+            System.IO.MemoryStream ms = new System.IO.MemoryStream(img);
+            biImg.BeginInit();
+            biImg.StreamSource = ms;
+            biImg.EndInit();
+
+            //System.Windows.Media.ImageSource imgSrc = biImg as System.Windows.Media.ImageSource;
+
+            return biImg;
         }
 
         private static BitmapImage ConvertToBitmapImage(System.Drawing.Image img)

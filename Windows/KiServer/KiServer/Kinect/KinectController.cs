@@ -26,8 +26,8 @@ namespace KiServer.Kinect
 
         private const int DepthWidth = 320; //320
         private const int DepthHeight = 240; //240
-        private const int ColorWidth = 640; //320
-        private const int ColorHeight = 480; //240
+        private const int ColorWidth = 1280; //1280
+        private const int ColorHeight = 960; //960
 
         private int fpsController = 0;
         private int FPS_MOD = 1; //30 = 1 por segundo
@@ -117,7 +117,13 @@ namespace KiServer.Kinect
                 this.sensor.DepthStream.Enable(DepthImageFormat.Resolution320x240Fps30);
             }
 
-            this.sensor.ColorStream.Enable(ColorImageFormat.RgbResolution640x480Fps30);
+            if (ColorWidth == 640)
+            {
+                this.sensor.ColorStream.Enable(ColorImageFormat.RgbResolution640x480Fps30);
+            } else
+            {
+                this.sensor.ColorStream.Enable(ColorImageFormat.RgbResolution1280x960Fps12);
+            }
 
             // Allocate space to put the depth pixels we'll receive
             this.depthPixels = new DepthImagePixel[this.sensor.DepthStream.FramePixelDataLength];
@@ -160,7 +166,7 @@ namespace KiServer.Kinect
                     colorFrame.CopyPixelDataTo(this.colorPixels);
 
                     KinectData kd = new KinectData(ColorWidth, ColorHeight);
-                    kd.SetColorData(this.colorPixels.Select(pixel => Convert.ToInt16(pixel)).ToArray());
+                    kd.SetColorData(this.colorPixels);
 
                     //sender matrix
 

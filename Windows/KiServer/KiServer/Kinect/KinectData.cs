@@ -11,7 +11,7 @@ namespace KiServer.Kinect
         public long Timestamp;
         public short[] DepthArray;
         public short[] RawDepthArray;
-        public short[] RawColorArray;
+        public byte[] RawColorArray;
         public int Width;
         public int Height;
         public short MinDepth;
@@ -32,7 +32,7 @@ namespace KiServer.Kinect
             MaxDepth = maxDepth;
         }
 
-        public void SetColorData(short[] rawColorPixels)
+        public void SetColorData(byte[] rawColorPixels)
         {
             RawColorArray = rawColorPixels;
         }
