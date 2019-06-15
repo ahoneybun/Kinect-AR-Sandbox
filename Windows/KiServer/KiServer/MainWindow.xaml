@@ -22,8 +22,8 @@
         <Grid Margin="250,64,1,43" Background="#FF27CCA8" Grid.ColumnSpan="2">
             <Image x:Name="canvasRaw" HorizontalAlignment="Left" Height="240" VerticalAlignment="Top" Width="320" Margin="10,52,0,-6"/>
             <Image x:Name="canvasFixed" HorizontalAlignment="Left" Height="240" Margin="336,52,0,-6" VerticalAlignment="Top" Width="320"/>
-            <Label Content="Depth raw input" HorizontalAlignment="Left" Margin="10,25,0,0" VerticalAlignment="Top" FontSize="14" Height="27" Width="129" FontWeight="Bold"/>
-            <Label Content="Depth filter output" HorizontalAlignment="Left" Margin="336,25,0,0" VerticalAlignment="Top" FontSize="14" Height="27" Width="129" FontWeight="Bold"/>
+            <Label Content="Depth raw input" HorizontalAlignment="Left" Margin="10,25,0,0" VerticalAlignment="Top" FontSize="14" Height="27" Width="192" FontWeight="Bold"/>
+            <Label Content="Depth filter output" HorizontalAlignment="Left" Margin="336,25,0,0" VerticalAlignment="Top" FontSize="14" Height="27" Width="170" FontWeight="Bold"/>
             <CheckBox x:Name="previewCheck" Content="Preview" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Checked="Preview_Checked" Unchecked="Preview_Checked" IsChecked="True"/>
             <Image x:Name="canvasRawColor" HorizontalAlignment="Left" Height="240" VerticalAlignment="Top" Width="320" Margin="10,318,0,0"/>
 
@@ -32,16 +32,16 @@
             <Label Content="Ey, wha'happen!" HorizontalAlignment="Right" VerticalAlignment="Bottom" FontSize="10" Width="895"/>
         </StatusBar>
         <Label Content="by @findemor" HorizontalAlignment="Left" VerticalAlignment="Bottom" FontSize="10" Width="114" Margin="10,0,0,559" Height="23"/>
-        <CheckBox x:Name="histCheck" Content="Correction based on historical" Margin="10,115,836,487" Checked="Check_Changed" Unchecked="Check_Changed"/>
+        <CheckBox x:Name="histCheck" Content="Correction based on historical" Margin="10,115,836,544" Checked="Check_Changed" Unchecked="Check_Changed" IsChecked="True"/>
         <Label Content="Depth filters" HorizontalAlignment="Left" Margin="10,74,0,0" VerticalAlignment="Top" FontSize="14" Height="27" Width="129" FontWeight="Bold"/>
-        <CheckBox x:Name="statCheck" Content="Statistical holes filling" Margin="10,136,836,466" Checked="Check_Changed" Unchecked="Check_Changed" IsChecked="True"/>
-        <CheckBox x:Name="avgCheck" Content="Average moving filter" Margin="10,208,836,394" Checked="Check_Changed" Unchecked="Check_Changed"/>
+        <CheckBox x:Name="statCheck" Content="Statistical holes filling" Margin="10,136,836,523" Checked="Check_Changed" Unchecked="Check_Changed" IsChecked="True"/>
+        <CheckBox x:Name="avgCheck" Content="Average moving filter" Margin="10,208,836,451" Checked="Check_Changed" Unchecked="Check_Changed" IsChecked="True"/>
         <Slider x:Name="avgSlider" HorizontalAlignment="Left" Margin="30,229,0,0" VerticalAlignment="Top" Width="85" Height="24" Minimum="1" Maximum="20" Value="4" TickPlacement="BottomRight" ValueChanged="Check_Changed"/>
         <Label x:Name="avgText" Content="0 frames&#xD;&#xA;" HorizontalAlignment="Left" VerticalAlignment="Bottom" FontSize="10" Width="71" Margin="115,0,0,365" Height="29" Foreground="#FF8F8F8F"/>
         <Slider x:Name="statSlider" HorizontalAlignment="Left" Margin="30,157,0,0" VerticalAlignment="Top" Width="85" Height="24" Minimum="1" Maximum="50" Value="10" TickPlacement="BottomRight" ValueChanged="Check_Changed"/>
         <Label x:Name="statText" Content="0 pixels&#xA;" HorizontalAlignment="Left" VerticalAlignment="Bottom" FontSize="10" Width="71" Margin="115,0,0,437" Height="29" Foreground="#FF8F8F8F"/>
         <Label x:Name="fpsText" Content="0 fps&#xA;" HorizontalAlignment="Left" VerticalAlignment="Bottom" FontSize="10" Width="71" Margin="10,0,0,336" Height="29" Foreground="#FF8F8F8F"/>
-        <CheckBox x:Name="modeCheck" Content="Mode moving filter" Margin="10,186,836,416" Checked="Check_Changed" Unchecked="Check_Changed" IsChecked="True"/>
+        <CheckBox x:Name="modeCheck" Content="Mode moving filter" Margin="10,186,836,471" Checked="Check_Changed" Unchecked="Check_Changed"/>
 
     </Grid>
 </Window>

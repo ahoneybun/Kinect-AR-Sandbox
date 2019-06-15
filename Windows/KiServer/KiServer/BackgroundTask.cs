@@ -125,6 +125,30 @@ namespace KiServer
         {
             try
             {
+                System.Windows.Media.Imaging.WriteableBitmap colorBitmap = new System.Windows.Media.Imaging.WriteableBitmap(width, height, 96.0, 96.0, System.Windows.Media.PixelFormats.Bgr32, null);
+
+                byte[] pixels = new byte[imageArray.Length * 4];
+                int pixelsIndex = 0;
+                for (int i = 0; i < imageArray.Length; i++)
+                {
+                    float relativeDepth = Convert.ToInt16(imageArray[i]) / (float)max;
+                    System.Drawing.Color c = RelativeDepthToColor(relativeDepth);
+
+                    pixels[pixelsIndex++] = c.B;
+                    pixels[pixelsIndex++] = c.G;
+                    pixels[pixelsIndex++] = c.R;
+                    pixels[pixelsIndex++] = c.A;
+                }
+
+                colorBitmap.WritePixels(
+                        new System.Windows.Int32Rect(0, 0, width, height),
+                        pixels,
+                        width * sizeof(int),
+                        0);
+                colorBitmap.Freeze();
+                /*
+
+
                 System.Drawing.Bitmap bmp = new System.Drawing.Bitmap(width, height);
                 for (int i = 0; i < imageArray.Length; i++)
                 {
@@ -135,11 +159,11 @@ namespace KiServer
                     bmp.SetPixel(x, y, RelativeDepthToColor(relativeDepth));
                 }
 
-                BitmapImage bitmap = ConvertToBitmapImage(bmp);
+                BitmapImage bitmap = ConvertToBitmapImage(bmp);*/
 
                 canvas.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate ()
                 {
-                    canvas.Source = bitmap;
+                    canvas.Source = colorBitmap;
                 });
             }
             catch (Exception ex)
