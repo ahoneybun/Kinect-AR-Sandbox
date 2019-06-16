@@ -68,6 +68,8 @@
     <Compile Include="Kinect\Fix\ClosestPointsFilter.cs" />
     <Compile Include="Kinect\Fix\HolesWithHistorical.cs" />
     <Compile Include="Kinect\Fix\ModeMovingFilter.cs" />
+    <Compile Include="Kinect\ObjectsDetection\DetectedObject.cs" />
+    <Compile Include="Kinect\ObjectsDetection\ObjectDetector.cs" />
     <Compile Include="TCP\DataListener.cs" />
     <Compile Include="TCP\TCPData.cs" />
     <Compile Include="TCP\TCPHelpers.cs" />
@@ -118,6 +120,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\tag-detector\src\TagDetector\TagDetector.csproj">
+      <Project>{835a8d88-fa20-4825-8439-b74532f5a7a1}</Project>
+      <Name>TagDetector</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

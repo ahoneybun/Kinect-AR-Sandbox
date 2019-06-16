@@ -4,6 +4,11 @@ using Microsoft.Kinect;
 
 using System.Linq;
 using System.Drawing;
+using TagDetector;
+using TagDetector.Models;
+using System.Drawing.Imaging;
+using KiServer.Kinect.ObjectsDetection;
+using System.Collections.Generic;
 
 namespace KiServer.Kinect
 {
@@ -46,6 +51,7 @@ namespace KiServer.Kinect
         int MaxFilterHolesFillingDistance = 10;
         int MaxAvgFrames = 4;
 
+        ObjectsDetection.ObjectDetector ObjectDetector = new ObjectDetector();
 
 
         public void SetFilterHistorical(bool enabled)
@@ -171,6 +177,19 @@ namespace KiServer.Kinect
             return bmap;
         }
 
+        private static ImageCodecInfo GetEncoderInfo(String mimeType)
+        {
+            int j;
+            ImageCodecInfo[] encoders;
+            encoders = ImageCodecInfo.GetImageEncoders();
+            for (j = 0; j < encoders.Length; ++j)
+            {
+                if (encoders[j].MimeType == mimeType)
+                    return encoders[j];
+            }
+            return null;
+        }
+
         private void SensorColorFrameReady(object sender, ColorImageFrameReadyEventArgs e)
         {
             using (ColorImageFrame colorFrame = e.OpenColorImageFrame())
@@ -181,7 +200,6 @@ namespace KiServer.Kinect
                     colorFrame.CopyPixelDataTo(this.colorPixels);
 
                     KinectData kd = new KinectData(ColorWidth, ColorHeight);
-
 
 
                     //https://stackoverflow.com/questions/38989837/convert-rgb-array-to-image-in-c-sharp
@@ -199,6 +217,10 @@ namespace KiServer.Kinect
                     */
 
                     kd.SetColorData(ImageToBitmap(colorFrame));
+
+                    List<DetectedObject> objs = ObjectDetector.FindObjects(kd.ColorImage);
+                    kd.SetDetectedObjects(objs);
+
                     /*
                     System.Drawing.Bitmap B = new System.Drawing.Bitmap(ColorWidth, ColorHeight);
                     int r, g, b, a;

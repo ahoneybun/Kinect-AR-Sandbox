@@ -1,4 +1,5 @@
-﻿using System;
+﻿using KiServer.Kinect.ObjectsDetection;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,11 +12,13 @@ namespace KiServer.Kinect
         public long Timestamp;
         public short[] DepthArray;
         public short[] RawDepthArray;
-        public System.Drawing.Image RawColorArray;
+        public System.Drawing.Image ColorImage;
         public int Width;
         public int Height;
         public short MinDepth;
         public short MaxDepth;
+
+        public List<DetectedObject> DetectedObjects;
 
         public KinectData(int width, int height)
         {
@@ -32,9 +35,14 @@ namespace KiServer.Kinect
             MaxDepth = maxDepth;
         }
 
+        public void SetDetectedObjects(List<DetectedObject> objs)
+        {
+            this.DetectedObjects = objs;
+        }
+
         public void SetColorData(System.Drawing.Image rawColorPixels)
         {
-            RawColorArray = rawColorPixels;
+            ColorImage = rawColorPixels;
         }
     }
 }

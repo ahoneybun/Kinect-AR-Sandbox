@@ -222,9 +222,10 @@ namespace KiServer
                 {
                     if (fixedCanvas != null) PrintDepthOnCanvas(data.DepthArray, fixedCanvas, data.Width, data.Height, data.MaxDepth);
                     if (rawCanvas != null) PrintDepthOnCanvas(data.RawDepthArray, rawCanvas, data.Width, data.Height, data.MaxDepth);
-                } else if (data.RawColorArray != null)
+                } else if (data.ColorImage != null)
                 {
-                    if (rawColorCanvas != null) PrintColorOnCanvas(data.RawColorArray, rawColorCanvas, data.Width, data.Height); 
+                    if (rawColorCanvas != null) PrintColorOnCanvas(data.ColorImage, rawColorCanvas, data.Width, data.Height); 
+                    //TODO: pintar objetos y canvas en gris (lo que se envia)
                 }
             }
         }
