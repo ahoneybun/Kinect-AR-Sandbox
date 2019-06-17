@@ -45,16 +45,14 @@ namespace KiServer.Kinect.ObjectsDetection
 
         private System.Drawing.Point GetCenter()
         {
-            List<Point> dots = new List<Point>();
-
             int totalX = 0, totalY = 0;
-            foreach (Point p in dots)
+            foreach (Point p in Corners)
             {
                 totalX += p.X;
                 totalY += p.Y;
             }
-            int centerX = totalX / dots.Count;
-            int centerY = totalY / dots.Count;
+            int centerX = totalX / Corners.Length;
+            int centerY = totalY / Corners.Length;
 
             return new Point(centerX, centerY);
         }

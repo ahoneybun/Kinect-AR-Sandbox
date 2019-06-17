@@ -218,7 +218,7 @@ namespace KiServer.Kinect
 
                     kd.SetColorData(ImageToBitmap(colorFrame));
 
-                    List<DetectedObject> objs = ObjectDetector.FindObjects(kd.ColorImage);
+                    List<DetectedObject> objs = ObjectDetector.FindObjects(kd.ColorImage, kd.Width, kd.Height);
                     kd.SetDetectedObjects(objs);
 
                     /*

@@ -10,7 +10,7 @@ namespace KiServer.Kinect.ObjectsDetection
 {
     public class ObjectDetector
     {
-        public List<DetectedObject> FindObjects(Image img)
+        public List<DetectedObject> FindObjects(Image img, int width, int height)
         {
             List<DetectedObject> objs = new List<DetectedObject>();
 
@@ -28,7 +28,7 @@ namespace KiServer.Kinect.ObjectsDetection
                 {
                     foreach(Tag r in result)
                     {
-                        objs.Add(new DetectedObject(r.Polygon));
+                        objs.Add(new DetectedObject(r.Polygon, width, height));
                     }
                 }
             }

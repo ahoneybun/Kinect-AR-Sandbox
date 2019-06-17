@@ -74,6 +74,8 @@ namespace KiServer.Kinect
         {
             short[] depthResult = null;
 
+            depth = depth.Select(d => d < (short)0 ? (short)0 : d).ToArray();
+
             if (holesFilter != null)
             {
                 depthResult = holesFilter.ReplaceHolesWithHistorical(depth);

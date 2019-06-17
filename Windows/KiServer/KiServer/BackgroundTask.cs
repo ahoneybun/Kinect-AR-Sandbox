@@ -23,6 +23,7 @@ namespace KiServer
         Image rawCanvas = null;
         Image fixedCanvas = null;
         Image rawColorCanvas = null;
+        Image outputCanvas = null;
 
 
         DateTime fpsTimestamp = DateTime.MinValue;
@@ -44,6 +45,13 @@ namespace KiServer
         public void SetRawColorCanvas(Image canvas)
         {
             rawColorCanvas = canvas;
+        }
+
+
+
+        public void SetOutputCanvas(Image canvas)
+        {
+            outputCanvas = canvas;
         }
 
         public void SetRawCanvas(Image canvas)
@@ -222,13 +230,138 @@ namespace KiServer
                 {
                     if (fixedCanvas != null) PrintDepthOnCanvas(data.DepthArray, fixedCanvas, data.Width, data.Height, data.MaxDepth);
                     if (rawCanvas != null) PrintDepthOnCanvas(data.RawDepthArray, rawCanvas, data.Width, data.Height, data.MaxDepth);
-                } else if (data.ColorImage != null)
+                }
+                if (data.ColorImage != null)
                 {
-                    if (rawColorCanvas != null) PrintColorOnCanvas(data.ColorImage, rawColorCanvas, data.Width, data.Height); 
+                    if (rawColorCanvas != null) PrintColorOnCanvas(data.ColorImage, rawColorCanvas, data.Width, data.Height);
                     //TODO: pintar objetos y canvas en gris (lo que se envia)
                 }
+                PrintOutputCanvas(data.DepthArray, outputCanvas, data.DetectedObjects, data.Width, data.Height, data.MaxDepth);
             }
         }
+        System.Drawing.Bitmap basebmp;
+        System.Drawing.Bitmap objbmp;
+        System.Drawing.Pen[] colors = new System.Drawing.Pen[5]
+                    {
+                        System.Drawing.Pens.Aqua, System.Drawing.Pens.Aquamarine, System.Drawing.Pens.Blue, System.Drawing.Pens.BlueViolet, System.Drawing.Pens.Pink
+                    };
+        private void PrintOutputCanvas(short[] imageArray, Image canvas, List<Kinect.ObjectsDetection.DetectedObject> objects, int width, int height, int max)
+        {
+            try
+            {
+                if (imageArray != null) {
+                    //Print base
+                    basebmp = new System.Drawing.Bitmap(width, height);
+                    for (int i = 0; i < imageArray.Length; i++)
+                    {
+                        short relativeDepth = Convert.ToInt16((imageArray[i] > max ? max : imageArray[i]) / (float)max * 255);
+                        int x = i % width;
+                        int y = (i - x) / width;
+                        try
+                        {
+                            basebmp.SetPixel(x, y, System.Drawing.Color.FromArgb(255, relativeDepth, relativeDepth, relativeDepth));
+                        } catch(Exception ex)
+                        {
+                            var a = 1;
+                        }
+                    }
+                }
+
+                if (objects != null)
+                {
+                    int x;
+                    int y;
+                    objbmp = new System.Drawing.Bitmap(width, height);
+                    foreach (Kinect.ObjectsDetection.DetectedObject o in objects)
+                    {
+
+                        int i = 0;
+                        using (var g = System.Drawing.Graphics.FromImage(basebmp))
+                        {
+                            g.DrawRectangle(colors[0], 1, 1, 3, 3);
+                            foreach (Kinect.ObjectsDetection.RelCoord c in o.RelCorners)
+                            {
+                                x = c.X * width / 100;
+                                y = c.Y * height / 100;
+                                g.DrawRectangle(colors[i], x, y, 3, 3);
+                                i++;
+                            }
+                            
+                            x = o.RelCenter.X * width / 100;
+                            y = o.RelCenter.Y * height / 100;
+                            g.DrawRectangle(colors[i], x, y, 3, 3);
+
+                        }
+                    }
+                }
+
+                    using (var g = System.Drawing.Graphics.FromImage(basebmp))
+                    {
+                        g.DrawRectangle(colors[0], 0, 0, 10, 10);
+                    }
+
+                // merge images 
+                if (basebmp != null)
+                {
+                    BitmapImage basebitmap = ConvertToBitmapImage(basebmp);
+                    canvas.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate ()
+                    {
+                        canvas.Source = basebitmap;
+                    });
+                }
+
+                /*
+                if (imageArray != null)
+                {
+                    System.Windows.Media.Imaging.WriteableBitmap baseBitmap = new System.Windows.Media.Imaging.WriteableBitmap(width, height, 96.0, 96.0, System.Windows.Media.PixelFormats.Bgr32, null);
+                    
+                    byte[] pixels = new byte[imageArray.Length * 4];
+                    int pixelsIndex = 0;
+                    for (int i = 0; i < imageArray.Length; i++)
+                    {
+                        byte relativeDepth = Convert.ToByte(imageArray[i] / (float)max * 255);
+
+                        pixels[pixelsIndex++] = relativeDepth;
+                        pixels[pixelsIndex++] = relativeDepth;
+                        pixels[pixelsIndex++] = relativeDepth;
+                        pixels[pixelsIndex++] = 255;
+                    }
+
+                    baseBitmap.WritePixels(
+                        new System.Windows.Int32Rect(0, 0, width, height),
+                        pixels,
+                        width * sizeof(int),
+                        0);
+                    baseBitmap.Freeze();
+
+                    canvas.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate ()
+                    {
+                        canvas.Source = baseBitmap;
+                    });
+                }
+                */
+                /*
+
+
+                System.Drawing.Bitmap bmp = new System.Drawing.Bitmap(width, height);
+                for (int i = 0; i < imageArray.Length; i++)
+                {
+                    float relativeDepth = Convert.ToInt16(imageArray[i]) / (float)max;
+                    int x = i % width;
+                    int y = (i - x) / width;
+
+                    bmp.SetPixel(x, y, RelativeDepthToColor(relativeDepth));
+                }
+
+                BitmapImage bitmap = ConvertToBitmapImage(bmp);*/
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+        }
+
 
         private void PrintFPS()
         {
