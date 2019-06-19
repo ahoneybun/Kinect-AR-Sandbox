@@ -26,7 +26,8 @@
             <Label Content="Depth filter output" HorizontalAlignment="Left" Margin="336,25,0,0" VerticalAlignment="Top" FontSize="14" Height="27" Width="170" FontWeight="Bold"/>
             <CheckBox x:Name="previewCheck" Content="Preview" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Checked="Preview_Checked" Unchecked="Preview_Checked" IsChecked="True"/>
             <Image x:Name="canvasRawColor" HorizontalAlignment="Left" Height="240" VerticalAlignment="Top" Width="320" Margin="10,318,0,0"/>
-            <Image x:Name="canvasOutput" HorizontalAlignment="Left" Height="240" VerticalAlignment="Top" Width="320" Margin="336,318,0,0"/>
+            <Image x:Name="canvasOutputBase" HorizontalAlignment="Left" Height="240" VerticalAlignment="Top" Width="320" Margin="336,318,0,0"/>
+            <Image x:Name="canvasOutputLayer" HorizontalAlignment="Left" Height="240" VerticalAlignment="Top" Width="320" Margin="336,318,0,0"/>
 
         </Grid>
         <StatusBar HorizontalAlignment="Left" Height="28" Margin="10,637,0,0" VerticalAlignment="Top" Width="905">

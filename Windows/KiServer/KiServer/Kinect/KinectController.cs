@@ -33,8 +33,8 @@ namespace KiServer.Kinect
 
         private const int DepthWidth = 320; //320
         private const int DepthHeight = 240; //240
-        private const int ColorWidth = 1280; //1280
-        private const int ColorHeight = 960; //960
+        private const int ColorWidth = 640; //1280
+        private const int ColorHeight = 480; //960
 
         private int fpsController = 0;
         private int FPS_MOD = 1; //30 = 1 por segundo

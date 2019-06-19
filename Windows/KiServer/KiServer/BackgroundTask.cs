@@ -23,7 +23,8 @@ namespace KiServer
         Image rawCanvas = null;
         Image fixedCanvas = null;
         Image rawColorCanvas = null;
-        Image outputCanvas = null;
+        Image outputCanvasBase = null;
+        Image outputCanvasLayer = null;
 
 
         DateTime fpsTimestamp = DateTime.MinValue;
@@ -49,9 +50,13 @@ namespace KiServer
 
 
 
-        public void SetOutputCanvas(Image canvas)
+        public void SetOutputCanvasBase(Image canvas)
         {
-            outputCanvas = canvas;
+            outputCanvasBase = canvas;
+        }
+        public void SetOutputCanvasLayer(Image canvas)
+        {
+            outputCanvasLayer = canvas;
         }
 
         public void SetRawCanvas(Image canvas)
@@ -134,7 +139,7 @@ namespace KiServer
             try
             {
                 System.Windows.Media.Imaging.WriteableBitmap colorBitmap = new System.Windows.Media.Imaging.WriteableBitmap(width, height, 96.0, 96.0, System.Windows.Media.PixelFormats.Bgr32, null);
-
+                
                 byte[] pixels = new byte[imageArray.Length * 4];
                 int pixelsIndex = 0;
                 for (int i = 0; i < imageArray.Length; i++)
@@ -184,7 +189,7 @@ namespace KiServer
         {
             try
             {
-                
+
 
                 /*int index = 0;
                 int x = 0;
@@ -230,26 +235,83 @@ namespace KiServer
                 {
                     if (fixedCanvas != null) PrintDepthOnCanvas(data.DepthArray, fixedCanvas, data.Width, data.Height, data.MaxDepth);
                     if (rawCanvas != null) PrintDepthOnCanvas(data.RawDepthArray, rawCanvas, data.Width, data.Height, data.MaxDepth);
+                    if (outputCanvasBase != null) PrintOutputCanvasBase(data.DepthArray, outputCanvasBase, data.Width, data.Height, data.MaxDepth);
                 }
                 if (data.ColorImage != null)
                 {
                     if (rawColorCanvas != null) PrintColorOnCanvas(data.ColorImage, rawColorCanvas, data.Width, data.Height);
                     //TODO: pintar objetos y canvas en gris (lo que se envia)
                 }
-                PrintOutputCanvas(data.DepthArray, outputCanvas, data.DetectedObjects, data.Width, data.Height, data.MaxDepth);
+                PrintOutputCanvasLayer(outputCanvasLayer, data.DetectedObjects, data.Width, data.Height);
+                
             }
         }
-        System.Drawing.Bitmap basebmp;
+        System.Drawing.Bitmap outputBaseBmp;
         System.Drawing.Bitmap objbmp;
         System.Drawing.Pen[] colors = new System.Drawing.Pen[5]
                     {
                         System.Drawing.Pens.Aqua, System.Drawing.Pens.Aquamarine, System.Drawing.Pens.Blue, System.Drawing.Pens.BlueViolet, System.Drawing.Pens.Pink
                     };
-        private void PrintOutputCanvas(short[] imageArray, Image canvas, List<Kinect.ObjectsDetection.DetectedObject> objects, int width, int height, int max)
+        static byte FromShort(short number)
+        {
+            //byte2 = (byte)(number >> 8);
+            return (byte)(number & 255);
+        }
+        int w = 10;
+        int h = 10;
+        System.Drawing.Bitmap bmp = new System.Drawing.Bitmap(320, 240);
+        private void PrintOutputCanvasLayer(Image canvas, List<Kinect.ObjectsDetection.DetectedObject> objects, int width, int height)
+        {
+                canvas.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate ()
+                {
+                    using (System.Drawing.Graphics g = System.Drawing.Graphics.FromImage(bmp))
+                    {
+                        g.Clear(System.Drawing.Color.Transparent);
+                        g.DrawLine(new System.Drawing.Pen(System.Drawing.Color.Red), 0, 0, width -  5, height - 5);
+                    }
+                    canvas.Source = ConvertToBitmapImage(bmp);
+            });
+        }
+
+            
+
+                private void PrintOutputCanvasBase(short[] imageArray, Image canvas, int width, int height, int max)
         {
             try
             {
-                if (imageArray != null) {
+                System.Windows.Media.Imaging.WriteableBitmap colorBitmap = new System.Windows.Media.Imaging.WriteableBitmap(width, height, 96.0, 96.0, System.Windows.Media.PixelFormats.Bgr32, null);
+
+                byte[] pixels = new byte[imageArray.Length * 4];
+                int pixelsIndex = 0;
+                for (int i = 0; i < imageArray.Length; i++)
+                {
+                    byte relativeDepth = FromShort( Convert.ToInt16((imageArray[i] > max ? max : imageArray[i]) / (float)max * 255));
+                    //System.Drawing.Color c = RelativeDepthToColor(relativeDepth);
+
+                    pixels[pixelsIndex++] = relativeDepth; //B
+                    pixels[pixelsIndex++] = relativeDepth; //G
+                    pixels[pixelsIndex++] = relativeDepth; //R
+                    pixels[pixelsIndex++] = 255; //A
+                }
+
+                colorBitmap.WritePixels(
+                        new System.Windows.Int32Rect(0, 0, width, height),
+                        pixels,
+                        width * sizeof(int),
+                        0);
+                colorBitmap.Freeze();
+
+
+                canvas.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate ()
+                {
+                    canvas.Source = colorBitmap;
+                });
+
+
+
+
+                /*if (imageArray != null)
+                {
                     //Print base
                     basebmp = new System.Drawing.Bitmap(width, height);
                     for (int i = 0; i < imageArray.Length; i++)
@@ -257,13 +319,8 @@ namespace KiServer
                         short relativeDepth = Convert.ToInt16((imageArray[i] > max ? max : imageArray[i]) / (float)max * 255);
                         int x = i % width;
                         int y = (i - x) / width;
-                        try
-                        {
-                            basebmp.SetPixel(x, y, System.Drawing.Color.FromArgb(255, relativeDepth, relativeDepth, relativeDepth));
-                        } catch(Exception ex)
-                        {
-                            var a = 1;
-                        }
+
+                        basebmp.SetPixel(x, y, System.Drawing.Color.FromArgb(255, relativeDepth, relativeDepth, relativeDepth));
                     }
                 }
 
@@ -271,44 +328,63 @@ namespace KiServer
                 {
                     int x;
                     int y;
-                    objbmp = new System.Drawing.Bitmap(width, height);
-                    foreach (Kinect.ObjectsDetection.DetectedObject o in objects)
+                    if (objects.Count > 0)
                     {
-
-                        int i = 0;
-                        using (var g = System.Drawing.Graphics.FromImage(basebmp))
+                        objbmp = new System.Drawing.Bitmap(width, height,);
+                    }
+                    using (var g = System.Drawing.Graphics.FromImage(objbmp))
+                    {
+                        //foreach (Kinect.ObjectsDetection.DetectedObject o in objects)
                         {
-                            g.DrawRectangle(colors[0], 1, 1, 3, 3);
+
+                            int i = 0;
+                            //g.DrawRectangle(colors[0], 0, 0, 3, 3);
                             foreach (Kinect.ObjectsDetection.RelCoord c in o.RelCorners)
                             {
                                 x = c.X * width / 100;
                                 y = c.Y * height / 100;
-                                g.DrawRectangle(colors[i], x, y, 3, 3);
+                                g.DrawRectangle(colors[0], x, y, 3, 3);
                                 i++;
                             }
-                            
-                            x = o.RelCenter.X * width / 100;
-                            y = o.RelCenter.Y * height / 100;
-                            g.DrawRectangle(colors[i], x, y, 3, 3);
+
+                            //if (objects.Count > 0)
+                            //{
+                            //    x = objects[0].RelCenter.X * width / 100;
+                            //    y = objects[0].RelCenter.Y * height / 100;
+                                float w = g.ClipBounds.Width;
+                                float h = g.ClipBounds.Height;
+                                g.DrawRectangle(colors[0], w - 3, h - 10, 3, 3);
+                           // }
 
                         }
                     }
+
+
+
                 }
 
+                if (objbmp != null)
+                {
                     using (var g = System.Drawing.Graphics.FromImage(basebmp))
                     {
-                        g.DrawRectangle(colors[0], 0, 0, 10, 10);
+                        g.DrawImage(objbmp, 0, 0);
                     }
-
-                // merge images 
-                if (basebmp != null)
-                {
-                    BitmapImage basebitmap = ConvertToBitmapImage(basebmp);
-                    canvas.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate ()
-                    {
-                        canvas.Source = basebitmap;
-                    });
                 }
+    */
+                // merge images 
+                //if (basebmp != null)
+                //{
+                //BitmapImage basebitmap = ConvertToBitmapImage(basebmp);
+                /*canvas.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate ()
+                    {
+                        System.Drawing.Bitmap bmp = new System.Drawing.Bitmap(100, 100);
+                        using (System.Drawing.Graphics g = System.Drawing.Graphics.FromImage(bmp))
+                        {
+                            g.DrawLine(new System.Drawing.Pen(System.Drawing.Color.Red), 0, 0, 318, 238);
+                        }
+                        canvas.Source = ConvertToBitmapImage(bmp);
+                    });*/
+                // }
 
                 /*
                 if (imageArray != null)
@@ -387,7 +463,8 @@ namespace KiServer
                 if (d > 0)
                 {
                     c = Gradient.GetPixel(Convert.ToInt32((d > 1 ? 1 : d) * 99), 0);
-                } else
+                }
+                else
                 {
                     c = System.Drawing.Color.Black;
                 }
