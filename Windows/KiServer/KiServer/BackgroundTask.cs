@@ -23,7 +23,6 @@ namespace KiServer
         Image rawCanvas = null;
         Image fixedCanvas = null;
         Image rawColorCanvas = null;
-        Image outputCanvasBase = null;
         Image outputCanvasLayer = null;
 
 
@@ -49,11 +48,6 @@ namespace KiServer
         }
 
 
-
-        public void SetOutputCanvasBase(Image canvas)
-        {
-            outputCanvasBase = canvas;
-        }
         public void SetOutputCanvasLayer(Image canvas)
         {
             outputCanvasLayer = canvas;
@@ -235,7 +229,6 @@ namespace KiServer
                 {
                     if (fixedCanvas != null) PrintDepthOnCanvas(data.DepthArray, fixedCanvas, data.Width, data.Height, data.MaxDepth);
                     if (rawCanvas != null) PrintDepthOnCanvas(data.RawDepthArray, rawCanvas, data.Width, data.Height, data.MaxDepth);
-                    if (outputCanvasBase != null) PrintOutputCanvasBase(data.DepthArray, outputCanvasBase, data.Width, data.Height, data.MaxDepth);
                 }
                 if (data.ColorImage != null)
                 {
@@ -259,18 +252,51 @@ namespace KiServer
         }
         int w = 10;
         int h = 10;
-        System.Drawing.Bitmap bmp = new System.Drawing.Bitmap(320, 240);
+        System.Drawing.Bitmap bmp = null;
         private void PrintOutputCanvasLayer(Image canvas, List<Kinect.ObjectsDetection.DetectedObject> objects, int width, int height)
         {
+
+            if (objects != null && objects.Count > 0)
+            {
                 canvas.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate ()
                 {
+                    if (bmp == null)
+                    {
+                        bmp = new System.Drawing.Bitmap(width, height);
+
+                    }
                     using (System.Drawing.Graphics g = System.Drawing.Graphics.FromImage(bmp))
                     {
                         g.Clear(System.Drawing.Color.Transparent);
-                        g.DrawLine(new System.Drawing.Pen(System.Drawing.Color.Red), 0, 0, width -  5, height - 5);
+
+                        foreach (Kinect.ObjectsDetection.DetectedObject o in objects)
+                        {
+                            System.Drawing.Point p1 = new System.Drawing.Point(), p2 = new System.Drawing.Point();
+                            System.Drawing.Pen pen = System.Drawing.Pens.AliceBlue;
+                            for (int c = 0; c < o.RelCorners.Length - 1; c++)
+                            {
+                                p1 = new System.Drawing.Point(o.RelCorners[c].X * width / 100, o.RelCorners[c].Y * height / 100);
+                                p2 = new System.Drawing.Point(o.RelCorners[c + 1].X * width / 100, o.RelCorners[c + 1].Y * height / 100);
+                                g.DrawLine(System.Drawing.Pens.AliceBlue, p1, p2);
+                            }
+                            p1 = p2;
+                            p2 = new System.Drawing.Point(o.RelCorners[0].X * width / 100, o.RelCorners[0].Y * height / 100);
+                            g.DrawLine(System.Drawing.Pens.Red, p1, p2);
+
+                            System.Drawing.Font drawFont = new System.Drawing.Font("Arial", 14);
+                            System.Drawing.SolidBrush drawBrush = new System.Drawing.SolidBrush(System.Drawing.Color.Red);
+                            g.DrawString(o.Data, drawFont, drawBrush, o.RelCenter.X * width / 100, o.RelCenter.Y * height / 100);
+                            //g.DrawEllipse(System.Drawing.Pens.Red, o.RelCenter.X * width / 100, o.RelCenter.Y * height / 100, 4, 4);
+                        }
+
+
+
                     }
+
+
                     canvas.Source = ConvertToBitmapImage(bmp);
-            });
+                });
+            }
         }
 
             

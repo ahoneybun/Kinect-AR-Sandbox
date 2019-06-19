@@ -28,7 +28,7 @@ namespace KiServer.Kinect.ObjectsDetection
                 {
                     foreach(Tag r in result)
                     {
-                        objs.Add(new DetectedObject(r.Polygon, width, height));
+                        objs.Add(new DetectedObject(r.Polygon, width, height, r.Data));
                     }
                 }
             }
