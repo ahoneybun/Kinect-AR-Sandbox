@@ -20,7 +20,7 @@
         <TextBox x:Name="tPort" HorizontalAlignment="Left" Height="23" Margin="66,560,0,0" TextWrapping="Wrap" Text="5000" VerticalAlignment="Top" Width="170" FontSize="16" TextChanged="TPort_TextChanged"/>
         <Label Content="Port" HorizontalAlignment="Left" Margin="10,554,0,0" VerticalAlignment="Top" FontSize="18" Height="34" Width="42"/>
         <Grid Margin="250,64,0,53" Background="#FF27CCA8">
-            <Image x:Name="canvasRaw" HorizontalAlignment="Left" Height="240" VerticalAlignment="Top" Width="320" Margin="10,52,0,-6"/>
+            <Image x:Name="canvasRaw" HorizontalAlignment="Left" Height="240" VerticalAlignment="Top" Width="320" Margin="10,52,0,-6" OpacityMask="Black"/>
             <Image x:Name="canvasFixed" HorizontalAlignment="Left" Height="240" Margin="336,52,0,-6" VerticalAlignment="Top" Width="320"/>
             <Label Content="Depth raw input" HorizontalAlignment="Left" Margin="10,25,0,0" VerticalAlignment="Top" FontSize="14" Height="27" Width="192" FontWeight="Bold"/>
             <Label Content="Depth filter output" HorizontalAlignment="Left" Margin="336,25,0,0" VerticalAlignment="Top" FontSize="14" Height="27" Width="170" FontWeight="Bold"/>
@@ -29,7 +29,7 @@
             <Image x:Name="canvasOutputLayer" HorizontalAlignment="Left" Height="240" VerticalAlignment="Top" Width="320" Margin="336,328,0,0"/>
             <Label Content="Color raw input" HorizontalAlignment="Left" Margin="10,296,0,0" VerticalAlignment="Top" FontSize="14" Height="27" Width="192" FontWeight="Bold"/>
             <Label Content="Objects detected" HorizontalAlignment="Left" Margin="336,296,0,0" VerticalAlignment="Top" FontSize="14" Height="27" Width="192" FontWeight="Bold"/>
-            <Button x:Name="btnSaveSnapshot" Content="Save snapshot" HorizontalAlignment="Left" Margin="207,301,0,0" VerticalAlignment="Top" Width="123" Background="#FF24AE90"/>
+            <Button x:Name="btnSaveSnapshot" Content="Save snapshot" HorizontalAlignment="Left" Margin="207,301,0,0" VerticalAlignment="Top" Width="123" Background="#FF24AE90" Click="BtnSaveSnapshot_Click"/>
 
         </Grid>
         <StatusBar HorizontalAlignment="Left" Height="28" Margin="10,657,0,0" VerticalAlignment="Top" Width="913">

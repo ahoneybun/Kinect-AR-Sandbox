@@ -36,15 +36,15 @@ namespace KiServer
 
             backgroundTask.SetFixedCanvas(canvasFixed);
             backgroundTask.SetRawCanvas(canvasRaw);
-            backgroundTask.SetFpsText(fpsText);
             backgroundTask.SetRawColorCanvas(canvasRawColor);
             backgroundTask.SetOutputCanvasLayer(canvasOutputLayer);
+            backgroundTask.SetFpsText(fpsText);
 
             backgroundTask.EnablePreview = (bool)previewCheck.IsChecked;
 
             Thread thread = new Thread(new ThreadStart(backgroundTask.Start));
             thread.Start();
-            CheckFiltersStatus();
+            SetFiltersStatus();
         }
 
         private void TPort_TextChanged(object sender, TextChangedEventArgs e)
@@ -80,10 +80,10 @@ namespace KiServer
 
         private void Check_Changed(object sender, RoutedEventArgs e)
         {
-            CheckFiltersStatus();
+            SetFiltersStatus();
         }
 
-        private void CheckFiltersStatus()
+        private void SetFiltersStatus()
         {
             if (backgroundTask != null)
             {
@@ -93,9 +93,11 @@ namespace KiServer
                 backgroundTask.SetFilterAverageMoving((bool)avgCheck.IsChecked, avgValue);
                 avgText.Content = avgValue + " frames";
 
-
                 //mode filter
-                backgroundTask.SetFilterModeMoving((bool)modeCheck.IsChecked, avgValue);
+                modeSlider.IsEnabled = (bool)modeCheck.IsChecked;
+                int modeValue = Convert.ToInt32(modeSlider.Value);
+                backgroundTask.SetFilterModeMoving((bool)modeCheck.IsChecked, modeValue);
+                modeText.Content = modeValue + " frames";
 
                 //historical
                 backgroundTask.SetFilterHistorical((bool)histCheck.IsChecked);
@@ -105,12 +107,20 @@ namespace KiServer
                 int statValue = Convert.ToInt32(statSlider.Value);
                 backgroundTask.SetFilterHolesFilling((bool)statCheck.IsChecked, statValue);
                 statText.Content = statValue + " pixels";
+
+                //object detection
+                backgroundTask.SetObjectDetection((bool)objectDetectionCheck.IsChecked);
             }
         }
 
         private void Preview_Checked(object sender, RoutedEventArgs e)
         {
             if (backgroundTask != null) backgroundTask.EnablePreview = (bool)previewCheck.IsChecked;
+        }
+
+        private void BtnSaveSnapshot_Click(object sender, RoutedEventArgs e)
+        {
+            if (backgroundTask != null) backgroundTask.TakeSnapshot(System.AppDomain.CurrentDomain.BaseDirectory);
         }
     }
 }

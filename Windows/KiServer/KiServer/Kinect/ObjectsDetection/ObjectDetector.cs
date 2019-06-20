@@ -16,11 +16,8 @@ namespace KiServer.Kinect.ObjectsDetection
 
             if (img != null)
             {
-
-                //string name = "C:\\temp\\" + DateTime.Now.Ticks + ".png";
                 Bitmap bm = new Bitmap(img);
                 bm.RotateFlip(RotateFlipType.Rotate180FlipY);
-                //bm.Save(name, ImageFormat.Bmp);
 
                 System.Collections.Generic.List<Tag> result = TagDetector.Detector.detectTags(bm, showProcessedInput: false);
 

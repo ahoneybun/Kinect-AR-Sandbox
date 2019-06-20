@@ -20,10 +20,14 @@ namespace KiServer.Kinect
         private int MinDepth;//mm
         private int MaxDepth;//mm
 
-        public DepthFixer(int width, int height, int minDepth, int maxDepth)
+        public DepthFixer(int width, int height)
         {
             this.Width = width;
             this.Height = height;
+        }
+
+        public void SetDepthRange(short minDepth, short maxDepth)
+        {
             this.MinDepth = minDepth;
             this.MaxDepth = maxDepth;
         }
