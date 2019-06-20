@@ -99,6 +99,12 @@ namespace KiServer
             kinectController.SetObjectDetection(enabled);
         }
 
+
+        public void SetDepthRange(short min, short max)
+        {
+            kinectController.SetDepthRange(min, max);
+        }
+
         #endregion
 
         #region Control Methods
@@ -137,8 +143,8 @@ namespace KiServer
         {
             if (currentData != null)
             {
-                string filename = DateTime.Now.ToShortTimeString();
-                currentData.ColorImage.Save(folder + filename);
+                string filename = DateTime.Now.ToString("yyyyMMdd-hhmmss");
+                currentData.ColorImage.Save(folder + filename + ".bmp");
             }
         }
 
@@ -146,7 +152,6 @@ namespace KiServer
         //Listener cada vez que se ha obtenido una nueva imagen de la camara
         public void NewFrameListener(KinectData data, EventArgs e)
         {
-            currentData = data;
 
             if (data.DepthArray != null)
             {
@@ -162,6 +167,7 @@ namespace KiServer
                 }
                 if (data.ColorImage != null)
                 {
+                    currentData = data;
                     if (rawColorCanvas != null) PrintColorOnCanvas(data.ColorImage, rawColorCanvas, data.Width, data.Height);
                 }
                 PrintOutputCanvasLayer(outputCanvasLayer, data.DetectedObjects, data.Width, data.Height);

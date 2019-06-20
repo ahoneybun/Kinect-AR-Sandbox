@@ -45,6 +45,7 @@ namespace KiServer
             Thread thread = new Thread(new ThreadStart(backgroundTask.Start));
             thread.Start();
             SetFiltersStatus();
+            SetDepthRange();
         }
 
         private void TPort_TextChanged(object sender, TextChangedEventArgs e)
@@ -121,6 +122,25 @@ namespace KiServer
         private void BtnSaveSnapshot_Click(object sender, RoutedEventArgs e)
         {
             if (backgroundTask != null) backgroundTask.TakeSnapshot(System.AppDomain.CurrentDomain.BaseDirectory);
+        }
+
+        private void Range_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            SetDepthRange();
+        }
+
+        private void SetDepthRange()
+        {
+            if (backgroundTask != null)
+            {
+                short min = Convert.ToInt16(minSlider.Value);
+                short max = Convert.ToInt16(maxSlider.Value);
+
+                minText.Content = min + " mm";
+                maxText.Content = max + " mm";
+
+                backgroundTask.SetDepthRange(min, max);
+            }
         }
     }
 }
