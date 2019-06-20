@@ -162,8 +162,7 @@ namespace KiServer.Kinect.Fix
         private static short FastVerticalDepthSearch(short[] depthArray, int width, int height, int holeX, int holeY)
         {
             int maxDistance = height - holeY > holeY ? height - holeY : holeY;
-            int xLeft = holeX - 1 >= 0 ? holeX - 1 : holeX;
-            int xMiddle = xLeft == holeX ? holeX + 1 : holeX;
+            int x = holeX;
 
             short depth = 0;
 
@@ -172,28 +171,18 @@ namespace KiServer.Kinect.Fix
                 if (holeY - y >= 0)
                 {
                     //busqueda hacia arriba
-                    if (depthArray[xLeft + (holeY - y) * width] != 0)
+                    if (depthArray[x + (holeY - y) * width] != 0)
                     {
-                        depth = depthArray[xLeft + (holeY - y) * width];
-                        break;
-                    }
-                    if (depthArray[xMiddle + (holeY - y) * width] != 0)
-                    {
-                        depth = depthArray[xMiddle + (holeY - y) * width];
+                        depth = depthArray[x + (holeY - y) * width];
                         break;
                     }
                 }
                 if (holeY + y < height)
                 {
                     //busqueda hacia abajo
-                    if (depthArray[xLeft + (holeY + y) * width] != 0)
+                    if (depthArray[x + (holeY + y) * width] != 0)
                     {
-                        depth = depthArray[xLeft + (holeY + y) * width];
-                        break;
-                    }
-                    if (depthArray[xMiddle + (holeY + y) * width] != 0)
-                    {
-                        depth = depthArray[xMiddle + (holeY + y) * width];
+                        depth = depthArray[x + (holeY + y) * width];
                         break;
                     }
                 }

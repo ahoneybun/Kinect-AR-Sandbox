@@ -17,8 +17,8 @@ namespace KiServer.Kinect
 
         private int Width;
         private int Height;
-        private int MinDepth;//mm
-        private int MaxDepth;//mm
+        private short MinDepth;//mm
+        private short MaxDepth;//mm
 
         public DepthFixer(int width, int height)
         {
@@ -82,7 +82,8 @@ namespace KiServer.Kinect
         {
             short[] depthResult = null;
 
-            depth = depth.Select(d => d < (short)0 ? (short)0 : (d > MaxDepth ? (short)0 : d)).ToArray();
+            depth = depth.Select(d => d < MinDepth ? (short)0 : (d > MaxDepth ? Convert.ToInt16(MaxDepth - MinDepth) : Convert.ToInt16(d - MinDepth))).ToArray();
+            //depth = depth.Select(d => d < (short)0 ? (short)0 : (d > MaxDepth ? (short)0 : d)).ToArray();
 
             if (holesFilter != null)
             {

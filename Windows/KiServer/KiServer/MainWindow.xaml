@@ -50,7 +50,7 @@
         <Slider x:Name="modeSlider" HorizontalAlignment="Left" Margin="30,226,0,0" VerticalAlignment="Top" Width="156" Height="24" Minimum="1" Maximum="20" Value="4" TickPlacement="BottomRight" ValueChanged="Check_Changed"/>
         <Label x:Name="modeText" Content="0 frames&#xA;" HorizontalAlignment="Left" VerticalAlignment="Bottom" FontSize="10" Width="71" Margin="186,0,0,445" Height="29" Foreground="#FF8F8F8F"/>
         <Label Content="Object detection" HorizontalAlignment="Left" Margin="3,399,0,0" VerticalAlignment="Top" FontSize="14" Height="27" Width="193" FontWeight="Bold"/>
-        <CheckBox x:Name="objectDetectionCheck" Content="Enable object detection" Margin="10,431,713,248" Checked="Check_Changed" Unchecked="Check_Changed" IsChecked="True"/>
+        <CheckBox x:Name="objectDetectionCheck" Content="Enable object detection" Margin="10,431,713,248" Checked="Check_Changed" Unchecked="Check_Changed"/>
         <Slider x:Name="minSlider" HorizontalAlignment="Left" Margin="52,331,0,0" VerticalAlignment="Top" Width="119" Height="24" Minimum="800" Maximum="4000" Value="4" TickPlacement="BottomRight" ValueChanged="Range_Changed" LargeChange="10" SmallChange="1" TickFrequency="100"/>
         <Slider x:Name="maxSlider" HorizontalAlignment="Left" Margin="52,358,0,0" VerticalAlignment="Top" Width="119" Height="24" Minimum="800" Maximum="4000" Value="4000" TickPlacement="BottomRight" ValueChanged="Range_Changed" TickFrequency="100" SmallChange="1" LargeChange="10"/>
         <Label Content="Depth Range" HorizontalAlignment="Left" Margin="3,297,0,0" VerticalAlignment="Top" FontSize="14" Height="27" Width="129"/>

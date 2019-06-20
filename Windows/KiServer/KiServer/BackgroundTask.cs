@@ -246,22 +246,22 @@ namespace KiServer
                     using (System.Drawing.Graphics g = System.Drawing.Graphics.FromImage(bmpOutputLayer))
                     {
                         g.Clear(System.Drawing.Color.Transparent);
-
+                        System.Drawing.Pen pen1 = new System.Drawing.Pen(System.Drawing.Color.Blue, 4);
+                        System.Drawing.Pen pen2 = new System.Drawing.Pen(System.Drawing.Color.Aqua, 4);
                         foreach (Kinect.ObjectsDetection.DetectedObject o in objects)
                         {
                             System.Drawing.Point p1 = new System.Drawing.Point(), p2 = new System.Drawing.Point();
-                            System.Drawing.Pen pen = System.Drawing.Pens.AliceBlue;
                             for (int c = 0; c < o.RelCorners.Length - 1; c++)
                             {
                                 p1 = new System.Drawing.Point(o.RelCorners[c].X * width / 100, o.RelCorners[c].Y * height / 100);
                                 p2 = new System.Drawing.Point(o.RelCorners[c + 1].X * width / 100, o.RelCorners[c + 1].Y * height / 100);
-                                g.DrawLine(System.Drawing.Pens.AliceBlue, p1, p2);
+                                g.DrawLine(pen1, p1, p2);
                             }
                             p1 = p2;
                             p2 = new System.Drawing.Point(o.RelCorners[0].X * width / 100, o.RelCorners[0].Y * height / 100);
-                            g.DrawLine(System.Drawing.Pens.Red, p1, p2);
+                            g.DrawLine(pen2, p1, p2);
 
-                            System.Drawing.Font drawFont = new System.Drawing.Font("Arial", 14);
+                            System.Drawing.Font drawFont = new System.Drawing.Font("Arial", 30);
                             System.Drawing.SolidBrush drawBrush = new System.Drawing.SolidBrush(System.Drawing.Color.Red);
                             g.DrawString(o.Data, drawFont, drawBrush, o.RelCenter.X * width / 100, o.RelCenter.Y * height / 100);
                         }

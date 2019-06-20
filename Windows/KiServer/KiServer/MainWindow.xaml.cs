@@ -136,6 +136,9 @@ namespace KiServer
                 short min = Convert.ToInt16(minSlider.Value);
                 short max = Convert.ToInt16(maxSlider.Value);
 
+                maxSlider.Minimum = min + 1;
+                minSlider.Maximum = max - 1;
+
                 minText.Content = min + " mm";
                 maxText.Content = max + " mm";
 
