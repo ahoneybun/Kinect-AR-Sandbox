@@ -24,7 +24,7 @@ if [ $CD_RESULT -ne 0 ]; then
 fi
 
 # Determine current Vrui version:
-VRUI_CURRENT_RELEASE=$(wget -q -O - https://findemor.github.io/Kinect-Augmented-Reality-Sandbox/Linux/Sandbox/Scripts/CurrentVruiRelease.txt)
+VRUI_CURRENT_RELEASE=$(wget -q -O - https://github.com/ahoneybun/Kinect-AR-Sandbox/tree/master/docs/Linux/Sandbox/Scripts/CurrentVruiRelease.txt)
 GETVERSION_RESULT=$?
 if [ $GETVERSION_RESULT -ne 0 ]; then
 	echo "Could not determine current Vrui release number; please check your network connection and try again"
@@ -34,7 +34,7 @@ read VRUI_VERSION VRUI_RELEASE <<< "$VRUI_CURRENT_RELEASE"
 
 # Download and unpack Vrui tarball:
 echo "Downloading Vrui-$VRUI_VERSION-$VRUI_RELEASE into $HOME/src"
-wget -O - https://findemor.github.io/Kinect-Augmented-Reality-Sandbox/Linux/Sandbox/Resources/Vrui-$VRUI_VERSION-$VRUI_RELEASE.tar.gz | tar xfz -
+wget -O - https://github.com/ahoneybun/Kinect-AR-Sandbox/tree/master/docs/Linux/SandboxResources/Vrui-$VRUI_VERSION-$VRUI_RELEASE.tar.gz | tar xfz -
 cd Vrui-$VRUI_VERSION-$VRUI_RELEASE
 DOWNLOAD_RESULT=$?
 
