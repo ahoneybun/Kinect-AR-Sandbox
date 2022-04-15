@@ -1,20 +1,18 @@
 # Augmented Reality Sandbox
 
-Proyecto en el que conservo recursos, adaptaciones y anotaciones que hice sobre el original de la universidad de Ucla.
+Source: [https://arsandbox.ucdavis.edu/](https://arsandbox.ucdavis.edu/)
 
-Proyecto original: [https://arsandbox.ucdavis.edu/](https://arsandbox.ucdavis.edu/)
+### Instuctions 
 
-### Instrucciones
+Install Vrui
 
-Paso 4:
-
-Instalar Vrui
 ```shell
 wget https://findemor.github.io/Kinect-Augmented-Reality-Sandbox/Linux/Sandbox/Scripts/Build-Ubuntu.sh
 bash Build-Ubuntu.sh
 ```
 
-Instalar Kinect Packages
+Install Kinect Packages
+
 ```shell
 cd ~/src
 wget https://findemor.github.io/Kinect-Augmented-Reality-Sandbox/Linux/Sandbox/Resources/Kinect-2.8-001.tar.gz
@@ -23,9 +21,6 @@ cd Kinect-2.8-001
 make
 
 #### sudo mkdir /usr/local/include/Kinect
-
-
-
 
 sudo make install
 make installudevrule
@@ -38,14 +33,8 @@ cd ..
 wget https://findemor.github.io/Kinect-Augmented-Reality-Sandbox/Linux/Sandbox/Resources/SARndbox-1.5-001.tar.gz
 tar xfz SARndbox-1.5-001.tar.gz
 
-
-
-
-
 cp ~/src/Kinect-2.8-001/share/Configuration.Kinect ~/src/Vrui-3.1-002/BuildRoot/
 cp ~/src/Kinect-2.8-001/BuildRoot/Packages.Kinect ~/src/Vrui-3.1-002/BuildRoot/
-
-
 
 cd SARndbox-1.5-001
 make
@@ -69,29 +58,12 @@ utilidad para los patrones de calibracion
 ~/src/Vrui-3.1-002/bin/XBackground
 
 ```
-
-
-
 http://idav.ucdavis.edu/~okreylos/ResDev/SARndbox/LinkSoftwareInstallation.html
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 no se encuentra el fichero... esta en:
 findemor@hp-compaq:~/src/SARndbox-1.5-001$ find ../ -name "Configuration.Kinect"
 cp ~/src/Kinect-2.8-001/share/Configuration.Kinect ~/src/Vrui-3.1-002/BuildRoot/
 cp ~/src/Kinect-2.8-001/BuildRoot/Packages.Kinect ~/src/Vrui-3.1-002/BuildRoot/
-
 
 /home/findemor/src/Vrui-3.1-002/BuildRoot/Configuration.Kinect: No existe el archivo o el directorio
 /home/findemor/src/Vrui-3.1-002/BuildRoot/Packages.Kinect: No existe el archivo o el directorio
